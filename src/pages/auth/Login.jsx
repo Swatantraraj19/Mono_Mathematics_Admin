@@ -72,28 +72,28 @@ export const Login = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col justify-center items-center px-4 py-4 sm:py-6">
-      <div className="w-full max-w-[400px] space-y-3.5 sm:space-y-4">
+    <div className="min-h-[100dvh] w-full bg-slate-50 flex flex-col justify-center items-center px-4 py-6 sm:py-10">
+      <div className="w-full max-w-[400px] my-auto space-y-4">
         
-        {/* Compact Brand Header */}
+        {/* Brand Header */}
         <div className="flex flex-col items-center text-center">
-          <div className="w-16 h-16 sm:w-20 sm:h-20 flex items-center justify-center">
+          <div className="w-20 h-20 sm:w-24 sm:h-24 flex items-center justify-center">
             <img
               src={logo}
               alt="Mono Mathematics Logo"
               className="w-full h-full object-contain drop-shadow-xs transition-transform duration-200 hover:scale-105"
             />
           </div>
-          <div className="mt-1.5 inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-indigo-50 border border-indigo-100 text-primary-700 text-[11px] font-semibold">
+          <div className="mt-2 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-50 border border-indigo-100 text-primary-700 text-xs font-semibold shadow-xs">
             <ShieldCheck className="w-3.5 h-3.5 text-primary-600" />
             Administration Portal
           </div>
         </div>
 
         {/* Compact Login Card */}
-        <div className="bg-white border border-slate-200 rounded-xl shadow-card p-5 sm:p-6">
-          <div className="mb-3.5 text-left">
-            <h3 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight">
+        <div className="bg-white border border-slate-200 rounded-2xl shadow-card p-6 sm:p-7">
+          <div className="mb-4 text-left">
+            <h3 className="text-lg font-bold text-slate-900 tracking-tight">
               Sign in to your account
             </h3>
             <p className="text-xs text-slate-500 mt-0.5">
@@ -101,7 +101,7 @@ export const Login = () => {
             </p>
           </div>
 
-          <form className="space-y-3" onSubmit={handleSubmit} noValidate>
+          <form className="space-y-3.5" onSubmit={handleSubmit} noValidate>
             <div>
               <Input
                 label="Admin Email"
@@ -152,7 +152,7 @@ export const Login = () => {
           </form>
 
           <div className="mt-4 border-t border-slate-100 pt-3 text-center">
-            <p className="text-[10.5px] text-slate-400">
+            <p className="text-[11px] text-slate-400">
               Authorized administrator access only. All sessions are monitored.
             </p>
           </div>
