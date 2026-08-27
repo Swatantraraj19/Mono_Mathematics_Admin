@@ -1,0 +1,71 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --color-primary: #4F46E5;
+    --color-primary-hover: #3730A3;
+    --color-primary-light: #EEF2FF;
+    --color-bg: #F8FAFC;
+    --color-surface: #FFFFFF;
+    --color-text-primary: #0F172A;
+    --color-text-secondary: #64748B;
+    --color-border: #E2E8F0;
+    --color-success: #16A34A;
+    --color-warning: #D97706;
+    --color-error: #DC2626;
+  }
+
+  body {
+    background-color: var(--color-bg);
+    color: var(--color-text-primary);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Custom scrollbar for modern admin UI */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #F1F5F9;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #CBD5E1;
+    border-radius: 3px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #94A3B8;
+  }
+}
+
+@layer components {
+  /* Common Card Style */
+  .admin-card {
+    @apply bg-white border border-slate-200 rounded-xl shadow-card p-6 transition-all duration-200;
+  }
+  
+  /* Input Container */
+  .admin-input-group {
+    @apply flex flex-col gap-1.5;
+  }
+
+  /* Standard Table Style */
+  .admin-table {
+    @apply w-full text-left text-sm border-collapse;
+  }
+
+  .admin-table th {
+    @apply bg-slate-50 text-slate-500 font-semibold px-4 py-3 border-b border-slate-200 uppercase tracking-wider text-xs;
+  }
+
+  .admin-table td {
+    @apply px-4 py-3.5 border-b border-slate-100 text-slate-900;
+  }
+
+  .admin-table tr:hover td {
+    @apply bg-slate-50/70;
+  }
+}
