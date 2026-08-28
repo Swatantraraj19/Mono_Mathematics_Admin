@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { Mail, Lock, Eye, EyeOff, ShieldCheck } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../../hooks/useAuth';
@@ -9,7 +9,6 @@ import logo from '../../assets/logo.png';
 
 export const Login = () => {
   const navigate = useNavigate();
-  const location = useLocation();
   const { login, isAuthenticated, loading: authLoading } = useAuth();
 
   const [email, setEmail] = useState('');
@@ -18,14 +17,12 @@ export const Login = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState({});
 
-  const redirectPath = location.state?.from?.pathname || '/';
-
-  // If already authenticated, redirect to destination
+  // If already authenticated, always send to Dashboard (/)
   useEffect(() => {
     if (isAuthenticated && !authLoading) {
-      navigate(redirectPath, { replace: true });
+      navigate('/', { replace: true });
     }
-  }, [isAuthenticated, authLoading, navigate, redirectPath]);
+  }, [isAuthenticated, authLoading, navigate]);
 
   const validateForm = () => {
     const newErrors = {};
@@ -54,7 +51,8 @@ export const Login = () => {
     try {
       await login(email, password);
       toast.success('Welcome back! Signed in successfully.');
-      navigate(redirectPath, { replace: true });
+      // Always direct user to Dashboard upon successful login
+      navigate('/', { replace: true });
     } catch (err) {
       console.error('Login error:', err);
       let message = 'Failed to sign in. Please check your credentials.';
