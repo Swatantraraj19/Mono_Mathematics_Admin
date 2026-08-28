@@ -11,6 +11,10 @@ import {
   GraduationCap,
   BookOpen,
   RefreshCw,
+  ChevronDown,
+  ChevronRight,
+  FolderOpen,
+  Folder,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import {
@@ -29,7 +33,6 @@ import { Select } from '../../components/common/Select';
 import { Badge } from '../../components/common/Badge';
 import { Modal } from '../../components/common/Modal';
 import { ConfirmDialog } from '../../components/common/ConfirmDialog';
-import { Table } from '../../components/common/Table';
 import { EmptyState } from '../../components/common/EmptyState';
 import { SkeletonLoader } from '../../components/common/SkeletonLoader';
 
@@ -40,11 +43,16 @@ export const ChaptersPage = () => {
   const [streams, setStreams] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Filters
+  // Filters & Search
   const [selectedClassFilter, setSelectedClassFilter] = useState('all');
   const [selectedStreamFilter, setSelectedStreamFilter] = useState('all');
   const [selectedSubjectFilter, setSelectedSubjectFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
+
+  // Accordion Expand/Collapse States
+  const [expandedClasses, setExpandedClasses] = useState({});
+  const [expandedStreams, setExpandedStreams] = useState({});
+  const [expandedSubjects, setExpandedSubjects] = useState({});
 
   // Modal states
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -96,9 +104,11 @@ export const ChaptersPage = () => {
 
   // Filter helpers
   const activeFilterClass = classes.find((c) => c.id === selectedClassFilter);
-  const filterClassHasStreams = activeFilterClass?.hasStreams || activeFilterClass?.name?.includes('11') || activeFilterClass?.name?.includes('12');
+  const filterClassHasStreams =
+    activeFilterClass?.hasStreams ||
+    activeFilterClass?.name?.includes('11') ||
+    activeFilterClass?.name?.includes('12');
 
-  // Subjects available under the selected filter class & stream
   const availableFilterSubjects = useMemo(() => {
     return classSubjects.filter((cs) => {
       if (selectedClassFilter !== 'all' && cs.classId !== selectedClassFilter) return false;
@@ -109,7 +119,10 @@ export const ChaptersPage = () => {
 
   // Form helpers
   const activeFormClass = classes.find((c) => c.id === formClassId);
-  const formClassHasStreams = activeFormClass?.hasStreams || activeFormClass?.name?.includes('11') || activeFormClass?.name?.includes('12');
+  const formClassHasStreams =
+    activeFormClass?.hasStreams ||
+    activeFormClass?.name?.includes('11') ||
+    activeFormClass?.name?.includes('12');
 
   const availableFormSubjects = useMemo(() => {
     return classSubjects.filter((cs) => {
@@ -119,7 +132,7 @@ export const ChaptersPage = () => {
     });
   }, [classSubjects, formClassId, formStreamId, formClassHasStreams]);
 
-  // Auto-set the first available subject in form and calculate next chapter number
+  // Auto-set the first available subject in form
   useEffect(() => {
     if (availableFormSubjects.length > 0) {
       if (!availableFormSubjects.some((s) => s.id === formClassSubjectId)) {
@@ -138,34 +151,189 @@ export const ChaptersPage = () => {
     }
   }, [formClassSubjectId, chapters, editingChapter]);
 
-  // Filtered Chapters list sorted hierarchically: Class -> Stream -> Subject -> Chapter Number
-  const filteredChapters = useMemo(() => {
-    const list = chapters.filter((ch) => {
-      const matchesSearch = (ch.name || '').toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesClass = selectedClassFilter === 'all' || ch.classId === selectedClassFilter;
-      const matchesStream = !filterClassHasStreams || selectedStreamFilter === 'all' || ch.streamId === selectedStreamFilter;
-      const matchesSubject = selectedSubjectFilter === 'all' || ch.classSubjectId === selectedSubjectFilter;
-      return matchesSearch && matchesClass && matchesStream && matchesSubject;
+  // Accordion Toggle Handlers
+  const toggleClass = (classId) => {
+    setExpandedClasses((prev) => ({ ...prev, [classId]: !prev[classId] }));
+  };
+
+  const toggleStream = (streamKey) => {
+    setExpandedStreams((prev) => ({ ...prev, [streamKey]: !prev[streamKey] }));
+  };
+
+  const toggleSubject = (subjectKey) => {
+    setExpandedSubjects((prev) => ({ ...prev, [subjectKey]: !prev[subjectKey] }));
+  };
+
+  // Build Structured Hierarchical Tree:
+  // Classes 6-10: Class -> Subject -> Chapters
+  // Classes 11-12: Class -> Stream -> Subject -> Chapters
+  const structuredHierarchy = useMemo(() => {
+    const trimmedSearch = searchTerm.trim().toLowerCase();
+
+    // 1. Filter Classes
+    let targetClasses = classes.filter((cls) => {
+      if (selectedClassFilter !== 'all' && cls.id !== selectedClassFilter) return false;
+      return true;
     });
 
-    const getClassNum = (name) => {
-      const num = parseInt((name || '').replace(/[^0-9]/g, ''), 10);
-      return isNaN(num) ? 99 : num;
-    };
+    targetClasses.sort((a, b) => (Number(a.orderIndex) || 0) - (Number(b.orderIndex) || 0));
 
-    return list.sort((a, b) => {
-      const classDiff = getClassNum(a.className) - getClassNum(b.className);
-      if (classDiff !== 0) return classDiff;
+    const result = [];
 
-      const streamDiff = (a.streamName || '').localeCompare(b.streamName || '');
-      if (streamDiff !== 0) return streamDiff;
+    targetClasses.forEach((cls) => {
+      const isSenior = cls.hasStreams || cls.name.includes('11') || cls.name.includes('12');
+      const allClassSubjects = classSubjects.filter((cs) => cs.classId === cls.id);
 
-      const subjectDiff = (a.subjectName || '').localeCompare(b.subjectName || '');
-      if (subjectDiff !== 0) return subjectDiff;
+      if (!isSenior) {
+        // Classes 6-10: Direct Subjects
+        const subjectGroups = [];
+        let classTotalChapters = 0;
 
-      return (Number(a.chapterNumber) || 0) - (Number(b.chapterNumber) || 0);
+        allClassSubjects.forEach((sub) => {
+          if (selectedSubjectFilter !== 'all' && sub.id !== selectedSubjectFilter) return;
+
+          const subChapters = chapters.filter((ch) => {
+            if (ch.classSubjectId !== sub.id) return false;
+            if (trimmedSearch && !(ch.name || '').toLowerCase().includes(trimmedSearch)) return false;
+            return true;
+          });
+
+          subChapters.sort((a, b) => (Number(a.chapterNumber) || 0) - (Number(b.chapterNumber) || 0));
+          classTotalChapters += subChapters.length;
+
+          if (!trimmedSearch || subChapters.length > 0) {
+            subjectGroups.push({
+              subjectId: sub.id,
+              subjectName: sub.subjectName,
+              subjectKey: `${cls.id}_${sub.id}`,
+              totalChapters: subChapters.length,
+              chapters: subChapters,
+              hasMatches: trimmedSearch.length > 0 && subChapters.length > 0,
+            });
+          }
+        });
+
+        if (!trimmedSearch || classTotalChapters > 0) {
+          result.push({
+            classId: cls.id,
+            className: cls.name,
+            isSenior: false,
+            totalChapters: classTotalChapters,
+            subjectGroups,
+            hasMatches: trimmedSearch.length > 0 && classTotalChapters > 0,
+          });
+        }
+      } else {
+        // Classes 11-12: Stream -> Subject -> Chapters
+        const streamGroups = [];
+        let seniorClassTotalChapters = 0;
+
+        const targetStreams = streams.filter((stm) => {
+          if (filterClassHasStreams && selectedStreamFilter !== 'all' && stm.id !== selectedStreamFilter) {
+            return false;
+          }
+          return true;
+        });
+
+        targetStreams.sort((a, b) => (Number(a.orderIndex) || 0) - (Number(b.orderIndex) || 0));
+
+        targetStreams.forEach((stm) => {
+          const streamSubjects = allClassSubjects.filter(
+            (s) => s.streamId === stm.id || (s.streamName && s.streamName.toLowerCase() === stm.name.toLowerCase())
+          );
+
+          const subjectGroups = [];
+          let streamTotalChapters = 0;
+
+          streamSubjects.forEach((sub) => {
+            if (selectedSubjectFilter !== 'all' && sub.id !== selectedSubjectFilter) return;
+
+            const subChapters = chapters.filter((ch) => {
+              if (ch.classSubjectId !== sub.id) return false;
+              if (trimmedSearch && !(ch.name || '').toLowerCase().includes(trimmedSearch)) return false;
+              return true;
+            });
+
+            subChapters.sort((a, b) => (Number(a.chapterNumber) || 0) - (Number(b.chapterNumber) || 0));
+            streamTotalChapters += subChapters.length;
+
+            if (!trimmedSearch || subChapters.length > 0) {
+              subjectGroups.push({
+                subjectId: sub.id,
+                subjectName: sub.subjectName,
+                subjectKey: `${cls.id}_${stm.id}_${sub.id}`,
+                totalChapters: subChapters.length,
+                chapters: subChapters,
+                hasMatches: trimmedSearch.length > 0 && subChapters.length > 0,
+              });
+            }
+          });
+
+          seniorClassTotalChapters += streamTotalChapters;
+
+          if (!trimmedSearch || streamTotalChapters > 0) {
+            streamGroups.push({
+              streamId: stm.id,
+              streamName: stm.name,
+              streamKey: `${cls.id}_${stm.id}`,
+              totalChapters: streamTotalChapters,
+              subjectGroups,
+              hasMatches: trimmedSearch.length > 0 && streamTotalChapters > 0,
+            });
+          }
+        });
+
+        if (!trimmedSearch || seniorClassTotalChapters > 0) {
+          result.push({
+            classId: cls.id,
+            className: cls.name,
+            isSenior: true,
+            totalChapters: seniorClassTotalChapters,
+            streamGroups,
+            hasMatches: trimmedSearch.length > 0 && seniorClassTotalChapters > 0,
+          });
+        }
+      }
     });
-  }, [chapters, searchTerm, selectedClassFilter, selectedStreamFilter, selectedSubjectFilter, filterClassHasStreams]);
+
+    return result;
+  }, [classes, streams, classSubjects, chapters, selectedClassFilter, selectedStreamFilter, selectedSubjectFilter, searchTerm, filterClassHasStreams]);
+
+  // When search is active, automatically expand matching accordions
+  useEffect(() => {
+    if (searchTerm.trim()) {
+      const autoClasses = {};
+      const autoStreams = {};
+      const autoSubjects = {};
+
+      structuredHierarchy.forEach((classNode) => {
+        if (classNode.hasMatches) {
+          autoClasses[classNode.classId] = true;
+
+          if (!classNode.isSenior && classNode.subjectGroups) {
+            classNode.subjectGroups.forEach((sg) => {
+              if (sg.hasMatches) autoSubjects[sg.subjectKey] = true;
+            });
+          } else if (classNode.isSenior && classNode.streamGroups) {
+            classNode.streamGroups.forEach((stmNode) => {
+              if (stmNode.hasMatches) {
+                autoStreams[stmNode.streamKey] = true;
+                if (stmNode.subjectGroups) {
+                  stmNode.subjectGroups.forEach((sg) => {
+                    if (sg.hasMatches) autoSubjects[sg.subjectKey] = true;
+                  });
+                }
+              }
+            });
+          }
+        }
+      });
+
+      setExpandedClasses((prev) => ({ ...prev, ...autoClasses }));
+      setExpandedStreams((prev) => ({ ...prev, ...autoStreams }));
+      setExpandedSubjects((prev) => ({ ...prev, ...autoSubjects }));
+    }
+  }, [searchTerm, structuredHierarchy]);
 
   // Open Create Modal
   const handleOpenCreateModal = () => {
@@ -194,7 +362,7 @@ export const ChaptersPage = () => {
     e.preventDefault();
 
     if (!formChapterName.trim()) {
-      toast.error('Please enter chapter name (e.g. Real Numbers).');
+      toast.error('Please enter chapter title (e.g. Real Numbers).');
       return;
     }
 
@@ -230,6 +398,12 @@ export const ChaptersPage = () => {
       } else {
         await createChapter(payload, 'mono_math_01');
         toast.success(`Created Chapter ${payload.chapterNumber}: ${payload.name}!`);
+
+        // Automatically expand the added chapter path
+        setExpandedClasses((prev) => ({ ...prev, [matchedSubject.classId]: true }));
+        if (matchedSubject.streamId) {
+          setExpandedStreams((prev) => ({ ...prev, [`${matchedSubject.classId}_${matchedSubject.streamId}`]: true }));
+        }
       }
       setIsModalOpen(false);
       loadData();
@@ -273,6 +447,11 @@ export const ChaptersPage = () => {
     }
   };
 
+  // Count total chapters visible
+  const totalVisibleChapters = useMemo(() => {
+    return structuredHierarchy.reduce((acc, node) => acc + (node.totalChapters || 0), 0);
+  }, [structuredHierarchy]);
+
   return (
     <div className="space-y-4">
       {/* Header & Add Button */}
@@ -283,7 +462,7 @@ export const ChaptersPage = () => {
             Chapter Management
           </h2>
           <p className="text-xs text-slate-500 mt-0.5">
-            Organize syllabus chapters sequentially under each class and subject curriculum.
+            Organize sequential chapters grouped by class, stream, and subject hierarchy.
           </p>
         </div>
 
@@ -293,18 +472,18 @@ export const ChaptersPage = () => {
           icon={Plus}
           onClick={handleOpenCreateModal}
           disabled={classSubjects.length === 0}
-          className="w-full sm:w-auto"
+          className="w-full sm:w-auto shadow-xs"
         >
           Add Chapter
         </Button>
       </div>
 
-      {/* Filter and Search Bar with Full Cascade Selectors */}
+      {/* Filter and Search Bar */}
       <div className="admin-card p-3 flex flex-col lg:flex-row items-center justify-between gap-2.5">
-        <div className="w-full lg:w-56">
+        <div className="w-full lg:w-64">
           <Input
             type="text"
-            placeholder="Search chapter name..."
+            placeholder="Search chapter name (e.g. Real Numbers)..."
             icon={Search}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -314,7 +493,7 @@ export const ChaptersPage = () => {
 
         <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto">
           {/* Class Filter */}
-          <div className="w-full sm:w-36">
+          <div className="flex-1 sm:w-36">
             <Select
               value={selectedClassFilter}
               onChange={(e) => {
@@ -330,7 +509,7 @@ export const ChaptersPage = () => {
             />
           </div>
 
-          {/* Stream Filter (Shows only if senior class is active) */}
+          {/* Stream Filter */}
           {filterClassHasStreams && (
             <div className="w-full sm:w-36">
               <Select
@@ -375,16 +554,16 @@ export const ChaptersPage = () => {
         </div>
       </div>
 
-      {/* Content Area */}
+      {/* Accordion Hierarchy List View */}
       {loading ? (
         <SkeletonLoader rows={5} />
-      ) : filteredChapters.length === 0 ? (
+      ) : structuredHierarchy.length === 0 ? (
         <EmptyState
           icon={Bookmark}
           title="No Chapters Found"
           description={
             searchTerm
-              ? `No chapters matching "${searchTerm}".`
+              ? `No chapters matching "${searchTerm}". Try a different search.`
               : classSubjects.length === 0
               ? 'Please add subjects first from the Subjects page before adding chapters.'
               : 'Click Add Chapter button above to organize sequential chapters under a subject.'
@@ -393,182 +572,366 @@ export const ChaptersPage = () => {
           onAction={classSubjects.length > 0 ? handleOpenCreateModal : undefined}
         />
       ) : (
-        <>
-          {/* 1. Mobile Cards View (< 640px) */}
-          <div className="grid grid-cols-1 gap-2.5 sm:hidden">
-            {filteredChapters.map((ch) => (
-              <div
-                key={ch.id}
-                className="admin-card p-3.5 flex flex-col justify-between space-y-3"
-              >
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-lg bg-amber-50 border border-amber-100 flex items-center justify-center text-amber-700 font-bold text-xs shrink-0">
-                      #{ch.chapterNumber}
-                    </div>
-                    <div>
-                      <h4 className="text-sm font-bold text-slate-900">{ch.name}</h4>
-                      <span className="text-[11px] text-primary-700 font-semibold">{ch.subjectName}</span>
-                    </div>
-                  </div>
-
-                  <Badge variant={ch.status === 'active' ? 'active' : 'inactive'}>
-                    {ch.status === 'active' ? 'Active' : 'Inactive'}
-                  </Badge>
-                </div>
-
-                <div className="flex items-center gap-1.5 flex-wrap text-xs">
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 font-medium">
-                    <GraduationCap className="w-3 h-3 text-slate-500" />
-                    {ch.className}
-                  </span>
-
-                  {ch.streamName && (
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-purple-50 text-purple-700 font-semibold border border-purple-200">
-                      <Layers className="w-3 h-3" />
-                      {ch.streamName}
-                    </span>
-                  )}
-                </div>
-
-                <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
-                  <button
-                    type="button"
-                    onClick={() => handleToggleStatus(ch)}
-                    className={`text-xs font-semibold flex items-center gap-1 ${
-                      ch.status === 'active' ? 'text-slate-500' : 'text-emerald-600'
-                    }`}
-                  >
-                    {ch.status === 'active' ? <XCircle className="w-3.5 h-3.5" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
-                    <span>{ch.status === 'active' ? 'Deactivate' : 'Activate'}</span>
-                  </button>
-
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => handleOpenEditModal(ch)}
-                      className="p-1.5 rounded-lg text-slate-500 hover:bg-slate-100 cursor-pointer"
-                      title="Edit"
-                    >
-                      <Edit2 className="w-4 h-4" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setDeleteTarget(ch)}
-                      className="p-1.5 rounded-lg text-status-error hover:bg-red-50 cursor-pointer"
-                      title="Delete"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
+        <div className="space-y-3">
+          {/* Result summary indicator */}
+          <div className="flex items-center justify-between text-xs text-slate-500 px-1">
+            <span>
+              Showing <strong className="text-slate-700 font-semibold">{totalVisibleChapters}</strong> chapter{totalVisibleChapters !== 1 ? 's' : ''} across <strong className="text-slate-700 font-semibold">{structuredHierarchy.length}</strong> class{structuredHierarchy.length !== 1 ? 'es' : ''}
+            </span>
+            {searchTerm.trim() && (
+              <span className="text-primary-600 font-medium bg-primary-50 px-2 py-0.5 rounded-md text-[11px]">
+                Search filter active: matching chapters auto-expanded
+              </span>
+            )}
           </div>
 
-          {/* 2. Desktop Table View (>= 640px) */}
-          <div className="hidden sm:block">
-            <Table>
-              <Table.Header>
-                <Table.Row>
-                  <Table.Head className="w-20">Ch #</Table.Head>
-                  <Table.Head>Chapter Name</Table.Head>
-                  <Table.Head>Subject</Table.Head>
-                  <Table.Head>Class / Stream</Table.Head>
-                  <Table.Head className="w-28">Status</Table.Head>
-                  <Table.Head className="text-right w-28 pr-6">Actions</Table.Head>
-                </Table.Row>
-              </Table.Header>
-              <Table.Body>
-                {filteredChapters.map((ch) => (
-                  <Table.Row key={ch.id}>
-                    <Table.Cell>
-                      <span className="font-mono text-xs font-bold px-2 py-0.5 bg-amber-50 text-amber-800 border border-amber-200 rounded-md">
-                        #{ch.chapterNumber}
-                      </span>
-                    </Table.Cell>
+          {/* Render Each Class Accordion */}
+          {structuredHierarchy.map((classGroup) => {
+            const isClassExpanded = expandedClasses[classGroup.classId] || Boolean(searchTerm.trim());
 
-                    <Table.Cell>
+            return (
+              <div
+                key={classGroup.classId}
+                className={`bg-white rounded-xl border transition-all duration-200 overflow-hidden shadow-xs ${
+                  isClassExpanded ? 'border-primary-200 ring-1 ring-primary-500/10' : 'border-slate-200 hover:border-slate-300'
+                }`}
+              >
+                {/* 1. Class Accordion Header Bar */}
+                <button
+                  type="button"
+                  onClick={() => toggleClass(classGroup.classId)}
+                  className={`w-full px-4 py-3 sm:py-3.5 flex items-center justify-between text-left transition-colors cursor-pointer select-none ${
+                    isClassExpanded ? 'bg-slate-50/80 border-b border-slate-100' : 'bg-white hover:bg-slate-50/50'
+                  }`}
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className={`p-1.5 rounded-lg transition-colors ${
+                      isClassExpanded ? 'bg-primary-50 text-primary-600' : 'bg-slate-100 text-slate-500'
+                    }`}>
+                      {isClassExpanded ? (
+                        <FolderOpen className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
+                      ) : (
+                        <Folder className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
+                      )}
+                    </div>
+
+                    <div className="min-w-0">
                       <div className="flex items-center gap-2">
-                        <span className="text-sm font-bold text-slate-900">{ch.name}</span>
-                      </div>
-                    </Table.Cell>
-
-                    <Table.Cell>
-                      <div className="flex items-center gap-1.5">
-                        <BookOpen className="w-3.5 h-3.5 text-primary-600 shrink-0" />
-                        <span className="text-xs font-semibold text-slate-800">{ch.subjectName}</span>
-                      </div>
-                    </Table.Cell>
-
-                    <Table.Cell>
-                      <div className="flex items-center gap-1.5">
-                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-xs font-semibold bg-slate-100 text-slate-700">
-                          {ch.className}
+                        <span className="text-sm sm:text-base font-bold text-slate-900 shrink-0">
+                          {classGroup.className}
                         </span>
 
-                        {ch.streamName && (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-xs font-semibold bg-purple-50 text-purple-700 border border-purple-200">
+                        {classGroup.isSenior ? (
+                          <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-purple-50 text-purple-700 border border-purple-200 shrink-0">
                             <Layers className="w-3 h-3" />
-                            {ch.streamName}
+                            Stream-Based (11–12)
                           </span>
+                        ) : null}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2.5 shrink-0">
+                    <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700">
+                      {classGroup.totalChapters} Chapter{classGroup.totalChapters !== 1 ? 's' : ''}
+                    </span>
+
+                    <div className="text-slate-400">
+                      {isClassExpanded ? (
+                        <ChevronDown className="w-4 h-4" />
+                      ) : (
+                        <ChevronRight className="w-4 h-4" />
+                      )}
+                    </div>
+                  </div>
+                </button>
+
+                {/* 2. Class Accordion Body */}
+                {isClassExpanded && (
+                  <div className="divide-y divide-slate-100">
+                    {/* A. For Direct Classes (Classes 6 to 10): List Subjects -> Chapters */}
+                    {!classGroup.isSenior && (
+                      <div className="p-2 sm:p-3 space-y-2 bg-slate-50/40">
+                        {classGroup.subjectGroups.length === 0 ? (
+                          <div className="py-4 text-center text-xs text-slate-400">
+                            No chapters found under {classGroup.className}.
+                          </div>
+                        ) : (
+                          classGroup.subjectGroups.map((subGroup) => {
+                            const isSubExpanded =
+                              expandedSubjects[subGroup.subjectKey] ?? (searchTerm.trim() ? true : false);
+
+                            return (
+                              <div
+                                key={subGroup.subjectKey}
+                                className="bg-white rounded-lg border border-slate-200 overflow-hidden shadow-2xs"
+                              >
+                                {/* Subject Header Bar */}
+                                <button
+                                  type="button"
+                                  onClick={() => toggleSubject(subGroup.subjectKey)}
+                                  className="w-full px-3.5 py-2.5 flex items-center justify-between text-left hover:bg-slate-50/80 transition-colors cursor-pointer select-none bg-slate-50/30"
+                                >
+                                  <div className="flex items-center gap-2 min-w-0">
+                                    <BookOpen className="w-4 h-4 text-blue-600 shrink-0" />
+                                    <span className="text-xs sm:text-sm font-bold text-slate-800 truncate">
+                                      {subGroup.subjectName}
+                                    </span>
+                                  </div>
+
+                                  <div className="flex items-center gap-2 shrink-0">
+                                    <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-100">
+                                      {subGroup.totalChapters} Chapter{subGroup.totalChapters !== 1 ? 's' : ''}
+                                    </span>
+                                    <div className="text-slate-400">
+                                      {isSubExpanded ? (
+                                        <ChevronDown className="w-3.5 h-3.5" />
+                                      ) : (
+                                        <ChevronRight className="w-3.5 h-3.5" />
+                                      )}
+                                    </div>
+                                  </div>
+                                </button>
+
+                                {/* Chapters List under Subject */}
+                                {isSubExpanded && (
+                                  <div className="divide-y divide-slate-100 border-t border-slate-100">
+                                    {subGroup.chapters.length === 0 ? (
+                                      <div className="py-4 text-center text-xs text-slate-400">
+                                        No chapters added yet under {subGroup.subjectName}.
+                                      </div>
+                                    ) : (
+                                      subGroup.chapters.map((ch) => (
+                                        <div
+                                          key={ch.id}
+                                          className="px-3.5 py-2 sm:py-2.5 flex items-center justify-between gap-3 hover:bg-slate-50/70 transition-colors"
+                                        >
+                                          <div className="flex items-center gap-2 min-w-0">
+                                            <span className="font-mono text-xs font-bold px-2 py-0.5 bg-amber-50 text-amber-800 border border-amber-200 rounded-md shrink-0">
+                                              #{ch.chapterNumber}
+                                            </span>
+                                            <span className="text-xs sm:text-sm font-semibold text-slate-900 truncate">
+                                              {ch.name}
+                                            </span>
+                                          </div>
+
+                                          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+                                            <Badge variant={ch.status === 'active' ? 'active' : 'inactive'} className="text-[10px] py-0 px-2">
+                                              {ch.status === 'active' ? 'Active' : 'Inactive'}
+                                            </Badge>
+
+                                            <div className="flex items-center gap-0.5">
+                                              <button
+                                                type="button"
+                                                onClick={() => handleToggleStatus(ch)}
+                                                className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+                                                  ch.status === 'active'
+                                                    ? 'text-emerald-600 hover:bg-emerald-50'
+                                                    : 'text-slate-400 hover:bg-slate-100'
+                                                }`}
+                                                title={ch.status === 'active' ? 'Deactivate' : 'Activate'}
+                                              >
+                                                {ch.status === 'active' ? (
+                                                  <CheckCircle2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                                                ) : (
+                                                  <XCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                                                )}
+                                              </button>
+
+                                              <button
+                                                type="button"
+                                                onClick={() => handleOpenEditModal(ch)}
+                                                className="p-1.5 rounded-lg text-slate-500 hover:text-primary-600 hover:bg-indigo-50 transition-colors cursor-pointer"
+                                                title="Edit"
+                                              >
+                                                <Edit2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                                              </button>
+
+                                              <button
+                                                type="button"
+                                                onClick={() => setDeleteTarget(ch)}
+                                                className="p-1.5 rounded-lg text-slate-400 hover:text-status-error hover:bg-red-50 transition-colors cursor-pointer"
+                                                title="Delete"
+                                              >
+                                                <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                                              </button>
+                                            </div>
+                                          </div>
+                                        </div>
+                                      ))
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })
                         )}
                       </div>
-                    </Table.Cell>
+                    )}
 
-                    <Table.Cell>
-                      <Badge variant={ch.status === 'active' ? 'active' : 'inactive'}>
-                        {ch.status === 'active' ? 'Active' : 'Inactive'}
-                      </Badge>
-                    </Table.Cell>
+                    {/* B. For Senior Classes (Classes 11 & 12): Class -> Stream -> Subject -> Chapters */}
+                    {classGroup.isSenior && (
+                      <div className="p-2 sm:p-3 space-y-2 bg-slate-50/40">
+                        {classGroup.streamGroups.map((streamGroup) => {
+                          const isStreamExpanded =
+                            expandedStreams[streamGroup.streamKey] ?? (searchTerm.trim() ? true : false);
 
-                    <Table.Cell className="text-right pr-6">
-                      <div className="flex items-center justify-end gap-1">
-                        {/* Status Toggle */}
-                        <button
-                          type="button"
-                          onClick={() => handleToggleStatus(ch)}
-                          className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
-                            ch.status === 'active'
-                              ? 'text-emerald-600 hover:bg-emerald-50'
-                              : 'text-slate-400 hover:bg-slate-100'
-                          }`}
-                          title={ch.status === 'active' ? 'Click to Deactivate' : 'Click to Activate'}
-                        >
-                          {ch.status === 'active' ? (
-                            <CheckCircle2 className="w-4 h-4" />
-                          ) : (
-                            <XCircle className="w-4 h-4" />
-                          )}
-                        </button>
+                          return (
+                            <div
+                              key={streamGroup.streamKey}
+                              className="bg-white rounded-lg border border-slate-200 overflow-hidden shadow-2xs"
+                            >
+                              {/* Stream Header */}
+                              <button
+                                type="button"
+                                onClick={() => toggleStream(streamGroup.streamKey)}
+                                className="w-full px-3.5 py-2.5 flex items-center justify-between text-left hover:bg-slate-50/80 transition-colors cursor-pointer select-none bg-purple-50/30"
+                              >
+                                <div className="flex items-center gap-2 min-w-0">
+                                  <Layers className="w-4 h-4 text-purple-600 shrink-0" />
+                                  <span className="text-xs sm:text-sm font-bold text-slate-800 truncate">
+                                    {streamGroup.streamName}
+                                  </span>
+                                </div>
 
-                        {/* Edit */}
-                        <button
-                          type="button"
-                          onClick={() => handleOpenEditModal(ch)}
-                          className="p-1.5 rounded-lg text-slate-500 hover:text-primary-600 hover:bg-indigo-50 transition-colors cursor-pointer"
-                          title="Edit Chapter"
-                        >
-                          <Edit2 className="w-4 h-4" />
-                        </button>
+                                <div className="flex items-center gap-2 shrink-0">
+                                  <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-100">
+                                    {streamGroup.totalChapters} Chapter{streamGroup.totalChapters !== 1 ? 's' : ''}
+                                  </span>
+                                  <div className="text-slate-400">
+                                    {isStreamExpanded ? (
+                                      <ChevronDown className="w-3.5 h-3.5" />
+                                    ) : (
+                                      <ChevronRight className="w-3.5 h-3.5" />
+                                    )}
+                                  </div>
+                                </div>
+                              </button>
 
-                        {/* Delete */}
-                        <button
-                          type="button"
-                          onClick={() => setDeleteTarget(ch)}
-                          className="p-1.5 rounded-lg text-slate-400 hover:text-status-error hover:bg-red-50 transition-colors cursor-pointer"
-                          title="Delete Chapter"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                              {/* Stream Subjects List */}
+                              {isStreamExpanded && (
+                                <div className="p-2 space-y-2 border-t border-slate-100 bg-slate-50/30">
+                                  {streamGroup.subjectGroups.length === 0 ? (
+                                    <div className="py-4 text-center text-xs text-slate-400">
+                                      No chapters under {streamGroup.streamName} yet.
+                                    </div>
+                                  ) : (
+                                    streamGroup.subjectGroups.map((subGroup) => {
+                                      const isSubExpanded =
+                                        expandedSubjects[subGroup.subjectKey] ?? (searchTerm.trim() ? true : false);
+
+                                      return (
+                                        <div
+                                          key={subGroup.subjectKey}
+                                          className="bg-white rounded-md border border-slate-200 overflow-hidden"
+                                        >
+                                          {/* Subject Header */}
+                                          <button
+                                            type="button"
+                                            onClick={() => toggleSubject(subGroup.subjectKey)}
+                                            className="w-full px-3 py-2 flex items-center justify-between text-left hover:bg-slate-50 transition-colors cursor-pointer select-none"
+                                          >
+                                            <div className="flex items-center gap-2 min-w-0">
+                                              <BookOpen className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                                              <span className="text-xs font-bold text-slate-800 truncate">
+                                                {subGroup.subjectName}
+                                              </span>
+                                            </div>
+
+                                            <div className="flex items-center gap-1.5 shrink-0">
+                                              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700">
+                                                {subGroup.totalChapters} Ch
+                                              </span>
+                                              <div className="text-slate-400">
+                                                {isSubExpanded ? (
+                                                  <ChevronDown className="w-3 h-3" />
+                                                ) : (
+                                                  <ChevronRight className="w-3 h-3" />
+                                                )}
+                                              </div>
+                                            </div>
+                                          </button>
+
+                                          {/* Chapters List */}
+                                          {isSubExpanded && (
+                                            <div className="divide-y divide-slate-100 border-t border-slate-100">
+                                              {subGroup.chapters.map((ch) => (
+                                                <div
+                                                  key={ch.id}
+                                                  className="px-3 py-2 flex items-center justify-between gap-2 hover:bg-slate-50/70 transition-colors"
+                                                >
+                                                  <div className="flex items-center gap-2 min-w-0">
+                                                    <span className="font-mono text-[11px] font-bold px-1.5 py-0.5 bg-amber-50 text-amber-800 border border-amber-200 rounded shrink-0">
+                                                      #{ch.chapterNumber}
+                                                    </span>
+                                                    <span className="text-xs font-semibold text-slate-900 truncate">
+                                                      {ch.name}
+                                                    </span>
+                                                  </div>
+
+                                                  <div className="flex items-center gap-1.5 shrink-0">
+                                                    <Badge variant={ch.status === 'active' ? 'active' : 'inactive'} className="text-[10px] py-0 px-1.5">
+                                                      {ch.status === 'active' ? 'Active' : 'Inactive'}
+                                                    </Badge>
+
+                                                    <div className="flex items-center">
+                                                      <button
+                                                        type="button"
+                                                        onClick={() => handleToggleStatus(ch)}
+                                                        className={`p-1 rounded transition-colors cursor-pointer ${
+                                                          ch.status === 'active'
+                                                            ? 'text-emerald-600 hover:bg-emerald-50'
+                                                            : 'text-slate-400 hover:bg-slate-100'
+                                                        }`}
+                                                        title={ch.status === 'active' ? 'Deactivate' : 'Activate'}
+                                                      >
+                                                        {ch.status === 'active' ? (
+                                                          <CheckCircle2 className="w-3.5 h-3.5" />
+                                                        ) : (
+                                                          <XCircle className="w-3.5 h-3.5" />
+                                                        )}
+                                                      </button>
+
+                                                      <button
+                                                        type="button"
+                                                        onClick={() => handleOpenEditModal(ch)}
+                                                        className="p-1 rounded text-slate-500 hover:text-primary-600 hover:bg-indigo-50 transition-colors cursor-pointer"
+                                                        title="Edit"
+                                                      >
+                                                        <Edit2 className="w-3.5 h-3.5" />
+                                                      </button>
+
+                                                      <button
+                                                        type="button"
+                                                        onClick={() => setDeleteTarget(ch)}
+                                                        className="p-1 rounded text-slate-400 hover:text-status-error hover:bg-red-50 transition-colors cursor-pointer"
+                                                        title="Delete"
+                                                      >
+                                                        <Trash2 className="w-3.5 h-3.5" />
+                                                      </button>
+                                                    </div>
+                                                  </div>
+                                                </div>
+                                              ))}
+                                            </div>
+                                          )}
+                                        </div>
+                                      );
+                                    })
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
                       </div>
-                    </Table.Cell>
-                  </Table.Row>
-                ))}
-              </Table.Body>
-            </Table>
-          </div>
-        </>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
       )}
 
       {/* Add / Edit Chapter Modal */}
