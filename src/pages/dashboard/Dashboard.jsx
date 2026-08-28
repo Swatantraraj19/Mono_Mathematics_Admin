@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   GraduationCap,
   Layers,
@@ -10,17 +10,54 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
+import { fetchClasses } from '../../services/classService';
+import { fetchStreams } from '../../services/streamService';
 
 export const Dashboard = () => {
   const { userProfile } = useAuth();
+  const [counts, setCounts] = useState({
+    classes: 0,
+    streams: 0,
+    subjects: 0,
+    chapters: 0,
+    videos: 0,
+    liveClasses: 0,
+  });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadCounts = async () => {
+      try {
+        const [classesData, streamsData] = await Promise.allSettled([
+          fetchClasses('mono_math_01'),
+          fetchStreams('mono_math_01'),
+        ]);
+
+        const totalClasses = classesData.status === 'fulfilled' ? classesData.value.length : 0;
+        const totalStreams = streamsData.status === 'fulfilled' ? streamsData.value.length : 0;
+
+        setCounts((prev) => ({
+          ...prev,
+          classes: totalClasses,
+          streams: totalStreams,
+        }));
+      } catch (err) {
+        console.error('Error loading dashboard stats:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadCounts();
+  }, []);
 
   const stats = [
-    { title: 'Academic Classes', count: '7', subtitle: 'Classes 6 to 12', icon: GraduationCap, path: '/classes', color: 'text-indigo-600 bg-indigo-50 border-indigo-100' },
-    { title: 'Streams (11–12)', count: '3', subtitle: 'PCM, PCB, Commerce', icon: Layers, path: '/streams', color: 'text-purple-600 bg-purple-50 border-purple-100' },
-    { title: 'Mapped Subjects', count: '12', subtitle: 'Core curriculum', icon: BookOpen, path: '/subjects', color: 'text-blue-600 bg-blue-50 border-blue-100' },
-    { title: 'Course Chapters', count: '48', subtitle: 'Structured units', icon: Bookmark, path: '/chapters', color: 'text-amber-600 bg-amber-50 border-amber-100' },
-    { title: 'Recorded Videos', count: '124', subtitle: 'YouTube Unlisted', icon: Video, path: '/videos', color: 'text-emerald-600 bg-emerald-50 border-emerald-100' },
-    { title: 'Live Classes', count: '4', subtitle: 'Scheduled on Zoom', icon: Radio, path: '/live-classes', color: 'text-rose-600 bg-rose-50 border-rose-100' },
+    { title: 'Academic Classes', count: loading ? '-' : counts.classes.toString(), subtitle: 'Classes 6 to 12', icon: GraduationCap, path: '/classes', color: 'text-indigo-600 bg-indigo-50 border-indigo-100' },
+    { title: 'Streams (11–12)', count: loading ? '-' : counts.streams.toString(), subtitle: 'Science, Commerce, Arts', icon: Layers, path: '/streams', color: 'text-purple-600 bg-purple-50 border-purple-100' },
+    { title: 'Mapped Subjects', count: '0', subtitle: 'Core curriculum', icon: BookOpen, path: '/subjects', color: 'text-blue-600 bg-blue-50 border-blue-100' },
+    { title: 'Course Chapters', count: '0', subtitle: 'Structured units', icon: Bookmark, path: '/chapters', color: 'text-amber-600 bg-amber-50 border-amber-100' },
+    { title: 'Recorded Videos', count: '0', subtitle: 'YouTube Unlisted', icon: Video, path: '/videos', color: 'text-emerald-600 bg-emerald-50 border-emerald-100' },
+    { title: 'Live Classes', count: '0', subtitle: 'Scheduled on Zoom', icon: Radio, path: '/live-classes', color: 'text-rose-600 bg-rose-50 border-rose-100' },
   ];
 
   return (

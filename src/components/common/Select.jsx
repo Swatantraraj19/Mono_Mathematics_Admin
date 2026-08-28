@@ -9,7 +9,7 @@ export const Select = React.forwardRef(({
   error,
   helperText,
   options = [],
-  placeholder = 'Select an option',
+  placeholder = '',
   className = '',
   id,
   required = false,
@@ -18,7 +18,7 @@ export const Select = React.forwardRef(({
   const selectId = id || (label ? label.toLowerCase().replace(/\s+/g, '-') : undefined);
 
   return (
-    <div className="w-full flex flex-col gap-1.5 text-left">
+    <div className="w-full flex flex-col gap-1 text-left">
       {label && (
         <label htmlFor={selectId} className="text-xs font-semibold text-slate-700">
           {label}
@@ -40,22 +40,22 @@ export const Select = React.forwardRef(({
         )}
         {...props}
       >
-        {placeholder && (
+        {placeholder ? (
           <option value="" disabled>
             {placeholder}
           </option>
-        )}
+        ) : null}
         {options.map((opt) => (
           <option key={opt.value} value={opt.value}>
-            {opt.label}
+            {opt.label || opt.value}
           </option>
         ))}
       </select>
 
       {error ? (
-        <p className="text-xs text-status-error font-medium">{error}</p>
+        <p className="text-[11px] text-status-error font-medium mt-0.5">{error}</p>
       ) : helperText ? (
-        <p className="text-xs text-slate-500">{helperText}</p>
+        <p className="text-[11px] text-slate-500 mt-0.5">{helperText}</p>
       ) : null}
     </div>
   );

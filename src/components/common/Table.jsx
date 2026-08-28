@@ -4,7 +4,7 @@ import { EmptyState } from './EmptyState';
 import { cn } from '../../utils/cn';
 
 /**
- * Reusable Table container component.
+ * Reusable Table container with compound subcomponents.
  */
 export const Table = ({
   columns = [],
@@ -17,6 +17,19 @@ export const Table = ({
   onEmptyAction,
   className = '',
 }) => {
+  // If compound children are provided (Table.Header, Table.Body)
+  if (children && columns.length === 0) {
+    return (
+      <div className={cn('w-full overflow-hidden bg-white border border-slate-200 rounded-xl shadow-card', className)}>
+        <div className="overflow-x-auto">
+          <table className="admin-table">
+            {children}
+          </table>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={cn('w-full overflow-hidden bg-white border border-slate-200 rounded-xl shadow-card', className)}>
       <div className="overflow-x-auto">
@@ -61,3 +74,50 @@ export const Table = ({
     </div>
   );
 };
+
+Table.Header = ({ children, className = '' }) => (
+  <thead className={cn('bg-slate-50/80 border-b border-slate-200', className)}>
+    {children}
+  </thead>
+);
+
+Table.Body = ({ children, className = '' }) => (
+  <tbody className={cn('divide-y divide-slate-100 bg-white', className)}>
+    {children}
+  </tbody>
+);
+
+Table.Row = ({ children, className = '', onClick }) => (
+  <tr
+    onClick={onClick}
+    className={cn(
+      'transition-colors duration-150 hover:bg-slate-50/80',
+      onClick && 'cursor-pointer',
+      className
+    )}
+  >
+    {children}
+  </tr>
+);
+
+Table.Head = ({ children, className = '', style }) => (
+  <th
+    style={style}
+    className={cn(
+      'px-4 py-3 text-left text-xs font-bold text-slate-600 uppercase tracking-wider select-none',
+      className
+    )}
+  >
+    {children}
+  </th>
+);
+
+Table.Cell = ({ children, className = '', colSpan, onClick }) => (
+  <td
+    colSpan={colSpan}
+    onClick={onClick}
+    className={cn('px-4 py-3.5 text-xs sm:text-sm text-slate-700 align-middle', className)}
+  >
+    {children}
+  </td>
+);
