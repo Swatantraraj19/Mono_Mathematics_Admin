@@ -29,7 +29,7 @@ export const Sidebar = ({ className = '', onItemClick }) => {
   const { userProfile, logout } = useAuth();
 
   return (
-    <aside className={cn('w-64 bg-white border-r border-slate-200 flex flex-col h-screen select-none shrink-0', className)}>
+    <aside className={cn('w-64 bg-white border-r border-slate-200 flex flex-col h-full select-none shrink-0 overflow-hidden', className)}>
       {/* Brand Header */}
       <div className="h-14 px-4 border-b border-slate-100 flex items-center gap-3 shrink-0">
         <img
@@ -49,7 +49,7 @@ export const Sidebar = ({ className = '', onItemClick }) => {
       </div>
 
       {/* Navigation Links */}
-      <nav className="flex-1 px-2.5 py-3 space-y-1 overflow-y-auto">
+      <nav className="flex-1 px-2.5 py-3 space-y-1 overflow-y-auto min-h-0">
         <div className="px-2.5 pb-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
           Management
         </div>
@@ -102,7 +102,7 @@ export const Sidebar = ({ className = '', onItemClick }) => {
       </nav>
 
       {/* User Profile & Permanently Visible Logout Footer */}
-      <div className="p-2.5 border-t border-slate-100 shrink-0 bg-slate-50/60">
+      <div className="p-2.5 border-t border-slate-100 shrink-0 bg-slate-50/70">
         <div className="p-2 rounded-xl bg-white border border-slate-200 shadow-xs flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 min-w-0">
             <div className="w-7 h-7 rounded-lg bg-primary-600 text-white font-bold text-xs flex items-center justify-center shrink-0 shadow-xs">
