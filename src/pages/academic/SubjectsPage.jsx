@@ -676,7 +676,8 @@ export const SubjectsPage = () => {
                       <div className="p-2 sm:p-3 space-y-2 bg-slate-50/40">
                         {classGroup.streamGroups.map((streamGroup) => {
                           const isStreamExpanded =
-                            expandedStreams[streamGroup.streamKey] ?? (searchTerm.trim() ? true : true);
+                            Boolean(expandedStreams[streamGroup.streamKey]) ||
+                            (Boolean(searchTerm.trim()) && streamGroup.hasMatches);
 
                           return (
                             <div
