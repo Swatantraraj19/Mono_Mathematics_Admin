@@ -14,29 +14,103 @@ import { db } from '../config/firebase';
 const CHAPTERS_COLLECTION = 'chapters';
 
 /**
- * Fetch all chapters for an institute, optionally filtered by classSubjectId.
+ * Fetch chapters strictly scoped to a specific subject (classSubjectId).
+ * Eliminates downloading all chapters across the entire institute.
+ */
+export const fetchChaptersBySubject = async (instituteId = 'mono_math_01', classSubjectId) => {
+  if (!classSubjectId) return [];
+  try {
+    const q = query(
+      collection(db, CHAPTERS_COLLECTION),
+      where('instituteId', '==', instituteId),
+      where('classSubjectId', '==', classSubjectId)
+    );
+    const snapshot = await getDocs(q);
+    const list = snapshot.docs.map((docSnap) => ({
+      id: docSnap.id,
+      ...docSnap.data(),
+    }));
+
+    // Client-side sort by chapterNumber ascending
+    return list.sort(
+      (a, b) =>
+        (Number(a.chapterNumber) || Number(a.orderIndex) || 0) -
+        (Number(b.chapterNumber) || Number(b.orderIndex) || 0)
+    );
+  } catch (error) {
+    console.error('Error fetching subject chapters:', error);
+    throw error;
+  }
+};
+
+/**
+ * Backwards compatible fetcher.
  */
 export const fetchChapters = async (instituteId = 'mono_math_01', classSubjectId = null) => {
+  if (classSubjectId && classSubjectId !== 'all') {
+    return fetchChaptersBySubject(instituteId, classSubjectId);
+  }
   try {
     const q = query(
       collection(db, CHAPTERS_COLLECTION),
       where('instituteId', '==', instituteId)
     );
     const snapshot = await getDocs(q);
-    let list = snapshot.docs.map((docSnap) => ({
+    const list = snapshot.docs.map((docSnap) => ({
       id: docSnap.id,
       ...docSnap.data(),
     }));
 
-    if (classSubjectId && classSubjectId !== 'all') {
-      list = list.filter((item) => item.classSubjectId === classSubjectId);
-    }
-
-    // Sort by chapterNumber / orderIndex ascending
-    return list.sort((a, b) => (Number(a.chapterNumber) || Number(a.orderIndex) || 0) - (Number(b.chapterNumber) || Number(b.orderIndex) || 0));
+    return list.sort(
+      (a, b) =>
+        (Number(a.chapterNumber) || Number(a.orderIndex) || 0) -
+        (Number(b.chapterNumber) || Number(b.orderIndex) || 0)
+    );
   } catch (error) {
-    console.error('Error fetching chapters:', error);
+    console.error('Error fetching all chapters:', error);
     throw error;
+  }
+};
+
+/**
+ * Global Search: Query chapters by name across the entire institute.
+ */
+export const searchGlobalChapters = async (instituteId = 'mono_math_01', searchText = '') => {
+  const trimmed = searchText.trim().toLowerCase();
+  if (!trimmed) return [];
+
+  try {
+    const q = query(
+      collection(db, CHAPTERS_COLLECTION),
+      where('instituteId', '==', instituteId)
+    );
+    const snapshot = await getDocs(q);
+    const all = snapshot.docs.map((docSnap) => ({
+      id: docSnap.id,
+      ...docSnap.data(),
+    }));
+
+    return all.filter((ch) => (ch.name || '').toLowerCase().includes(trimmed));
+  } catch (error) {
+    console.error('Error searching chapters:', error);
+    throw error;
+  }
+};
+
+/**
+ * Total chapters count for dashboard.
+ */
+export const fetchTotalChapterCount = async (instituteId = 'mono_math_01') => {
+  try {
+    const q = query(
+      collection(db, CHAPTERS_COLLECTION),
+      where('instituteId', '==', instituteId)
+    );
+    const snapshot = await getDocs(q);
+    return snapshot.size;
+  } catch (error) {
+    console.error('Error fetching total chapters count:', error);
+    return 0;
   }
 };
 
@@ -46,7 +120,7 @@ export const fetchChapters = async (instituteId = 'mono_math_01', classSubjectId
 export const createChapter = async (chapterData, instituteId = 'mono_math_01') => {
   try {
     // 1. Strict Uniqueness Check: Prevent duplicate chapter number or name in the same subject
-    const existingChapters = await fetchChapters(instituteId, chapterData.classSubjectId);
+    const existingChapters = await fetchChaptersBySubject(instituteId, chapterData.classSubjectId);
     const isDuplicate = existingChapters.some(
       (ch) =>
         (ch.name || '').toLowerCase() === chapterData.name.trim().toLowerCase() ||
@@ -89,7 +163,7 @@ export const updateChapter = async (chapterId, updateData, instituteId = 'mono_m
   try {
     // Strict uniqueness check on edit
     if (updateData.classSubjectId) {
-      const existingChapters = await fetchChapters(instituteId, updateData.classSubjectId);
+      const existingChapters = await fetchChaptersBySubject(instituteId, updateData.classSubjectId);
       const isDuplicate = existingChapters.some(
         (ch) =>
           ch.id !== chapterId &&
