@@ -4,8 +4,8 @@ import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from './contexts/AuthContext';
 import { ProtectedRoute } from './components/layout/ProtectedRoute';
 import { AdminLayout } from './components/layout/AdminLayout';
-import { PageFallback } from './components/common/PageFallback';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
+import { Loader2 } from 'lucide-react';
 
 // Route-Level Code Splitting (React.lazy)
 const Login = lazy(() => import('./pages/auth/Login').then((m) => ({ default: m.Login })));
@@ -16,6 +16,13 @@ const SubjectsPage = lazy(() => import('./pages/academic/SubjectsPage').then((m)
 const ChaptersPage = lazy(() => import('./pages/academic/ChaptersPage').then((m) => ({ default: m.ChaptersPage })));
 const VideosPage = lazy(() => import('./pages/videos/VideosPage').then((m) => ({ default: m.VideosPage })));
 const LiveClassesPage = lazy(() => import('./pages/live/LiveClassesPage').then((m) => ({ default: m.LiveClassesPage })));
+
+// Fallback for public login chunk loading
+const AuthFallback = () => (
+  <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+    <Loader2 className="w-8 h-8 text-primary-600 animate-spin" />
+  </div>
+);
 
 export default function App() {
   return (
@@ -50,28 +57,33 @@ export default function App() {
             }}
           />
 
-          <Suspense fallback={<PageFallback />}>
-            <Routes>
-              {/* Public Auth Route */}
-              <Route path="/login" element={<Login />} />
+          <Routes>
+            {/* Public Auth Route */}
+            <Route
+              path="/login"
+              element={
+                <Suspense fallback={<AuthFallback />}>
+                  <Login />
+                </Suspense>
+              }
+            />
 
-              {/* Protected Admin Routes with Master AdminLayout */}
-              <Route element={<ProtectedRoute />}>
-                <Route element={<AdminLayout />}>
-                  <Route path="/" element={<Dashboard />} />
-                  <Route path="/classes" element={<ClassesPage />} />
-                  <Route path="/streams" element={<StreamsPage />} />
-                  <Route path="/subjects" element={<SubjectsPage />} />
-                  <Route path="/chapters" element={<ChaptersPage />} />
-                  <Route path="/videos" element={<VideosPage />} />
-                  <Route path="/live-classes" element={<LiveClassesPage />} />
-                </Route>
+            {/* Protected Admin Routes: ProtectedRoute handles auth validation, AdminLayout houses inner content Suspense */}
+            <Route element={<ProtectedRoute />}>
+              <Route element={<AdminLayout />}>
+                <Route path="/" element={<Dashboard />} />
+                <Route path="/classes" element={<ClassesPage />} />
+                <Route path="/streams" element={<StreamsPage />} />
+                <Route path="/subjects" element={<SubjectsPage />} />
+                <Route path="/chapters" element={<ChaptersPage />} />
+                <Route path="/videos" element={<VideosPage />} />
+                <Route path="/live-classes" element={<LiveClassesPage />} />
               </Route>
+            </Route>
 
-              {/* Catch-all redirect */}
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
-          </Suspense>
+            {/* Catch-all redirect */}
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
         </AuthProvider>
       </BrowserRouter>
     </ErrorBoundary>
