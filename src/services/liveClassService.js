@@ -24,11 +24,6 @@ export const isValidMeetingUrl = (url) => {
 
 /**
  * Dynamically computes status based on scheduled date & time in IST timezone.
- * Lifecycle:
- * - Before start: 'upcoming'
- * - During start - end: 'live'
- * - After end: 'completed'
- * - If manually cancelled: 'cancelled'
  */
 export const computeLiveClassStatus = (liveClass) => {
   if (liveClass.manualStatus === 'cancelled' || liveClass.status === 'cancelled') {
@@ -41,7 +36,6 @@ export const computeLiveClassStatus = (liveClass) => {
 
   try {
     const now = new Date();
-    // Parse scheduled start and end timestamps
     const [startHours, startMinutes] = (liveClass.startTime || '00:00').split(':').map(Number);
     const startDateTime = new Date(`${liveClass.date}T${String(startHours).padStart(2, '0')}:${String(startMinutes).padStart(2, '0')}:00`);
 
@@ -50,7 +44,6 @@ export const computeLiveClassStatus = (liveClass) => {
       const [endHours, endMinutes] = liveClass.endTime.split(':').map(Number);
       endDateTime = new Date(`${liveClass.date}T${String(endHours).padStart(2, '0')}:${String(endMinutes).padStart(2, '0')}:00`);
     } else {
-      // Default duration: 1 hour if endTime not specified
       endDateTime = new Date(startDateTime.getTime() + 60 * 60 * 1000);
     }
 
@@ -86,7 +79,6 @@ export const fetchLiveClasses = async (instituteId = 'mono_math_01') => {
       };
     });
 
-    // Sort: Live first, then Upcoming (soonest first), then Completed/Cancelled
     return list.sort((a, b) => {
       const statusWeight = { live: 1, upcoming: 2, completed: 3, cancelled: 4 };
       const weightA = statusWeight[a.computedStatus] || 5;
@@ -94,7 +86,6 @@ export const fetchLiveClasses = async (instituteId = 'mono_math_01') => {
 
       if (weightA !== weightB) return weightA - weightB;
 
-      // Sort by date + startTime ascending for upcoming/live, descending for completed
       const timeA = new Date(`${a.date}T${a.startTime || '00:00'}`).getTime() || 0;
       const timeB = new Date(`${b.date}T${b.startTime || '00:00'}`).getTime() || 0;
 
@@ -104,7 +95,6 @@ export const fetchLiveClasses = async (instituteId = 'mono_math_01') => {
       return timeA - timeB;
     });
   } catch (error) {
-    console.error('Error fetching live classes:', error);
     throw error;
   }
 };
@@ -145,7 +135,6 @@ export const createLiveClass = async (classData, instituteId = 'mono_math_01') =
     const docRef = await addDoc(collection(db, LIVE_CLASSES_COLLECTION), docData);
     return { id: docRef.id, ...docData };
   } catch (error) {
-    console.error('Error creating live class:', error);
     throw error;
   }
 };
@@ -164,7 +153,6 @@ export const updateLiveClass = async (liveClassId, updateData) => {
     await updateDoc(docRef, sanitizedData);
     return { id: liveClassId, ...sanitizedData };
   } catch (error) {
-    console.error('Error updating live class:', error);
     throw error;
   }
 };
@@ -182,7 +170,6 @@ export const cancelLiveClass = async (liveClassId) => {
     });
     return { id: liveClassId, success: true };
   } catch (error) {
-    console.error('Error cancelling live class:', error);
     throw error;
   }
 };
@@ -196,7 +183,6 @@ export const deleteLiveClass = async (liveClassId) => {
     await deleteDoc(docRef);
     return { id: liveClassId, success: true };
   } catch (error) {
-    console.error('Error deleting live class:', error);
     throw error;
   }
 };

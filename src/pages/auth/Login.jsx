@@ -54,7 +54,6 @@ export const Login = () => {
       // Always direct user to Dashboard upon successful login
       navigate('/', { replace: true });
     } catch (err) {
-      console.error('Login error:', err);
       let message = 'Failed to sign in. Please check your credentials.';
       if (err.code === 'auth/invalid-credential' || err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password') {
         message = 'Invalid email or password.';

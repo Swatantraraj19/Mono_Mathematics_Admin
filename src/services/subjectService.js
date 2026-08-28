@@ -51,7 +51,6 @@ export const fetchMasterSubjects = async (instituteId = 'mono_math_01') => {
     }));
     return list.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
   } catch (error) {
-    console.error('Error fetching master subjects:', error);
     throw error;
   }
 };
@@ -82,7 +81,6 @@ export const fetchClassSubjects = async (instituteId = 'mono_math_01', classId =
 
     return list;
   } catch (error) {
-    console.error('Error fetching class subjects:', error);
     throw error;
   }
 };
@@ -99,61 +97,60 @@ export const mapSubjectToClass = async ({
   status = 'active',
 }, instituteId = 'mono_math_01') => {
   try {
-    // 1. Ensure master subject document exists
-    const masterQuery = query(
-      collection(db, SUBJECTS_COLLECTION),
-      where('instituteId', '==', instituteId),
-      where('name', '==', subjectName.trim())
+    const trimmedSubName = subjectName.trim();
+
+    // 1. Ensure master subject exists
+    const masterSubjects = await fetchMasterSubjects(instituteId);
+    let matchedMaster = masterSubjects.find(
+      (s) => (s.name || '').toLowerCase() === trimmedSubName.toLowerCase()
     );
-    const masterSnap = await getDocs(masterQuery);
-    let subjectId;
-    if (masterSnap.empty) {
-      const newSubjectRef = await addDoc(collection(db, SUBJECTS_COLLECTION), {
-        name: subjectName.trim(),
-        code: subjectName.toLowerCase().replace(/[^a-z0-9]/g, '-'),
+
+    if (!matchedMaster) {
+      const newMasterData = {
+        name: trimmedSubName,
+        code: trimmedSubName.substring(0, 3).toUpperCase(),
         status: 'active',
         instituteId,
         createdAt: serverTimestamp(),
-      });
-      subjectId = newSubjectRef.id;
-    } else {
-      subjectId = masterSnap.docs[0].id;
+      };
+      const masterDocRef = await addDoc(collection(db, SUBJECTS_COLLECTION), newMasterData);
+      matchedMaster = { id: masterDocRef.id, ...newMasterData };
     }
 
-    // 2. Strict Uniqueness: Prevent duplicate subject in the same class and stream
-    const existingMapped = await fetchClassSubjects(instituteId, classId, streamId);
-    const isDuplicate = existingMapped.some(
-      (m) => (m.subjectName || '').toLowerCase() === subjectName.trim().toLowerCase()
+    // 2. Prevent duplicate mapping in same class context
+    const existingMappings = await fetchClassSubjects(instituteId, classId, streamId);
+    const isAlreadyMapped = existingMappings.some(
+      (m) => (m.subjectName || '').toLowerCase() === trimmedSubName.toLowerCase()
     );
-    if (isDuplicate) {
-      const contextText = streamName ? `${className} (${streamName})` : className;
-      throw new Error(`"${subjectName}" is already mapped to ${contextText}. Duplicate subjects are not allowed.`);
+
+    if (isAlreadyMapped) {
+      const contextLabel = streamName ? `${className} (${streamName})` : className;
+      throw new Error(`Subject "${trimmedSubName}" is already mapped to ${contextLabel}.`);
     }
 
-    // 3. Save mapping document
-    const docData = {
+    // 3. Create mapping document
+    const mappingData = {
       classId,
       className,
       streamId: streamId || null,
       streamName: streamName || null,
-      subjectId,
-      subjectName: subjectName.trim(),
-      status,
+      subjectId: matchedMaster.id,
+      subjectName: matchedMaster.name,
+      status: status || 'active',
       instituteId,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     };
 
-    const docRef = await addDoc(collection(db, CLASS_SUBJECTS_COLLECTION), docData);
-    return { id: docRef.id, ...docData };
+    const docRef = await addDoc(collection(db, CLASS_SUBJECTS_COLLECTION), mappingData);
+    return { id: docRef.id, ...mappingData };
   } catch (error) {
-    console.error('Error mapping subject to class:', error);
     throw error;
   }
 };
 
 /**
- * Update a class-subject mapping.
+ * Update class-subject status or details.
  */
 export const updateClassSubject = async (classSubjectId, updateData) => {
   try {
@@ -166,7 +163,6 @@ export const updateClassSubject = async (classSubjectId, updateData) => {
     await updateDoc(docRef, sanitizedData);
     return { id: classSubjectId, ...sanitizedData };
   } catch (error) {
-    console.error('Error updating class subject:', error);
     throw error;
   }
 };
@@ -180,10 +176,11 @@ export const toggleClassSubjectStatus = async (classSubjectId, currentStatus) =>
 };
 
 /**
- * Delete / Unmap a subject with cascade dependency check.
+ * Remove subject mapping with cascade check.
  */
 export const unmapSubjectFromClass = async (classSubjectId) => {
   try {
+    // Check if chapters exist under this classSubject
     const chaptersQuery = query(
       collection(db, 'chapters'),
       where('classSubjectId', '==', classSubjectId)
@@ -191,14 +188,13 @@ export const unmapSubjectFromClass = async (classSubjectId) => {
     const chaptersSnap = await getDocs(chaptersQuery);
 
     if (!chaptersSnap.empty) {
-      throw new Error(`Cannot remove this subject because it has ${chaptersSnap.size} chapter(s) created under it. Delete or move chapters first.`);
+      throw new Error(`Cannot delete this subject because it contains ${chaptersSnap.size} chapter(s). Delete or reassign chapters first.`);
     }
 
     const docRef = doc(db, CLASS_SUBJECTS_COLLECTION, classSubjectId);
     await deleteDoc(docRef);
     return { id: classSubjectId, success: true };
   } catch (error) {
-    console.error('Error unmapping subject:', error);
     throw error;
   }
 };

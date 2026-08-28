@@ -56,8 +56,8 @@ export const Dashboard = () => {
           videos: totalVideos,
           liveClasses: totalLiveClasses,
         });
-      } catch (err) {
-        console.error('Error loading dashboard stats:', err);
+      } catch {
+        // Fallback gracefully on network disruption
       } finally {
         setLoading(false);
       }

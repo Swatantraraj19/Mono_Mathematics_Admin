@@ -26,8 +26,7 @@ export const AuthProvider = ({ children }) => {
             setUser(null);
             setUserProfile(null);
           }
-        } catch (error) {
-          console.error('Failed to restore admin profile:', error);
+        } catch {
           await signOut(auth);
           setUser(null);
           setUserProfile(null);

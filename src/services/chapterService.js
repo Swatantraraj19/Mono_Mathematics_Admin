@@ -15,7 +15,6 @@ const CHAPTERS_COLLECTION = 'chapters';
 
 /**
  * Fetch chapters strictly scoped to a specific subject (classSubjectId).
- * Eliminates downloading all chapters across the entire institute.
  */
 export const fetchChaptersBySubject = async (instituteId = 'mono_math_01', classSubjectId) => {
   if (!classSubjectId) return [];
@@ -31,14 +30,12 @@ export const fetchChaptersBySubject = async (instituteId = 'mono_math_01', class
       ...docSnap.data(),
     }));
 
-    // Client-side sort by chapterNumber ascending
     return list.sort(
       (a, b) =>
         (Number(a.chapterNumber) || Number(a.orderIndex) || 0) -
         (Number(b.chapterNumber) || Number(b.orderIndex) || 0)
     );
   } catch (error) {
-    console.error('Error fetching subject chapters:', error);
     throw error;
   }
 };
@@ -67,7 +64,6 @@ export const fetchChapters = async (instituteId = 'mono_math_01', classSubjectId
         (Number(b.chapterNumber) || Number(b.orderIndex) || 0)
     );
   } catch (error) {
-    console.error('Error fetching all chapters:', error);
     throw error;
   }
 };
@@ -92,7 +88,6 @@ export const searchGlobalChapters = async (instituteId = 'mono_math_01', searchT
 
     return all.filter((ch) => (ch.name || '').toLowerCase().includes(trimmed));
   } catch (error) {
-    console.error('Error searching chapters:', error);
     throw error;
   }
 };
@@ -109,7 +104,6 @@ export const fetchTotalChapterCount = async (instituteId = 'mono_math_01') => {
     const snapshot = await getDocs(q);
     return snapshot.size;
   } catch (error) {
-    console.error('Error fetching total chapters count:', error);
     return 0;
   }
 };
@@ -119,7 +113,6 @@ export const fetchTotalChapterCount = async (instituteId = 'mono_math_01') => {
  */
 export const createChapter = async (chapterData, instituteId = 'mono_math_01') => {
   try {
-    // 1. Strict Uniqueness Check: Prevent duplicate chapter number or name in the same subject
     const existingChapters = await fetchChaptersBySubject(instituteId, chapterData.classSubjectId);
     const isDuplicate = existingChapters.some(
       (ch) =>
@@ -151,7 +144,6 @@ export const createChapter = async (chapterData, instituteId = 'mono_math_01') =
     const docRef = await addDoc(collection(db, CHAPTERS_COLLECTION), docData);
     return { id: docRef.id, ...docData };
   } catch (error) {
-    console.error('Error creating chapter:', error);
     throw error;
   }
 };
@@ -161,7 +153,6 @@ export const createChapter = async (chapterData, instituteId = 'mono_math_01') =
  */
 export const updateChapter = async (chapterId, updateData, instituteId = 'mono_math_01') => {
   try {
-    // Strict uniqueness check on edit
     if (updateData.classSubjectId) {
       const existingChapters = await fetchChaptersBySubject(instituteId, updateData.classSubjectId);
       const isDuplicate = existingChapters.some(
@@ -187,7 +178,6 @@ export const updateChapter = async (chapterId, updateData, instituteId = 'mono_m
     await updateDoc(docRef, sanitizedData);
     return { id: chapterId, ...sanitizedData };
   } catch (error) {
-    console.error('Error updating chapter:', error);
     throw error;
   }
 };
@@ -205,7 +195,6 @@ export const toggleChapterStatus = async (chapterId, currentStatus) => {
  */
 export const deleteChapter = async (chapterId) => {
   try {
-    // Check if videos exist under this chapter
     const videosQuery = query(
       collection(db, 'videos'),
       where('chapterId', '==', chapterId)
@@ -220,7 +209,6 @@ export const deleteChapter = async (chapterId) => {
     await deleteDoc(docRef);
     return { id: chapterId, success: true };
   } catch (error) {
-    console.error('Error deleting chapter:', error);
     throw error;
   }
 };

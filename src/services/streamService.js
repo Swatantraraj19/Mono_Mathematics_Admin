@@ -11,16 +11,24 @@ import {
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
 
-const STREAMS_COLLECTION = 'streams';
+const COLLECTION_NAME = 'streams';
 
 /**
- * Fetch all master streams for an institute.
- * Uses client-side sorting by orderIndex.
+ * Standard streams for Classes 11 & 12 dropdown.
+ */
+export const STANDARD_STREAMS = [
+  'Science',
+  'Commerce',
+  'Arts',
+];
+
+/**
+ * Fetch all streams for an institute.
  */
 export const fetchStreams = async (instituteId = 'mono_math_01') => {
   try {
     const q = query(
-      collection(db, STREAMS_COLLECTION),
+      collection(db, COLLECTION_NAME),
       where('instituteId', '==', instituteId)
     );
     const snapshot = await getDocs(q);
@@ -31,7 +39,6 @@ export const fetchStreams = async (instituteId = 'mono_math_01') => {
 
     return list.sort((a, b) => (Number(a.orderIndex) || 0) - (Number(b.orderIndex) || 0));
   } catch (error) {
-    console.error('Error fetching streams:', error);
     throw error;
   }
 };
@@ -43,44 +50,41 @@ export const createStream = async (streamData, instituteId = 'mono_math_01') => 
   try {
     const docData = {
       name: streamData.name.trim(),
-      code: streamData.code ? streamData.code.trim().toLowerCase() : streamData.name.toLowerCase().replace(/[^a-z0-9]/g, '-'),
-      orderIndex: Number(streamData.orderIndex) || 1,
-      applicableClasses: streamData.applicableClasses || 'Class 11, Class 12',
+      slug: streamData.slug || streamData.name.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-'),
+      orderIndex: Number(streamData.orderIndex) || 0,
       status: streamData.status || 'active',
       instituteId,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     };
 
-    const docRef = await addDoc(collection(db, STREAMS_COLLECTION), docData);
+    const docRef = await addDoc(collection(db, COLLECTION_NAME), docData);
     return { id: docRef.id, ...docData };
   } catch (error) {
-    console.error('Error creating stream:', error);
     throw error;
   }
 };
 
 /**
- * Update stream.
+ * Update an existing stream.
  */
 export const updateStream = async (streamId, updateData) => {
   try {
-    const docRef = doc(db, STREAMS_COLLECTION, streamId);
+    const docRef = doc(db, COLLECTION_NAME, streamId);
     const sanitizedData = {
       ...updateData,
-      orderIndex: Number(updateData.orderIndex) || 1,
+      orderIndex: Number(updateData.orderIndex) || 0,
       updatedAt: serverTimestamp(),
     };
     await updateDoc(docRef, sanitizedData);
     return { id: streamId, ...sanitizedData };
   } catch (error) {
-    console.error('Error updating stream:', error);
     throw error;
   }
 };
 
 /**
- * Toggle stream status.
+ * Toggle stream active/inactive status.
  */
 export const toggleStreamStatus = async (streamId, currentStatus) => {
   const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
@@ -88,15 +92,24 @@ export const toggleStreamStatus = async (streamId, currentStatus) => {
 };
 
 /**
- * Delete a stream.
+ * Delete a stream with dependency check.
  */
 export const deleteStream = async (streamId) => {
   try {
-    const docRef = doc(db, STREAMS_COLLECTION, streamId);
+    const subjectsQuery = query(
+      collection(db, 'classSubjects'),
+      where('streamId', '==', streamId)
+    );
+    const subjectsSnap = await getDocs(subjectsQuery);
+
+    if (!subjectsSnap.empty) {
+      throw new Error(`Cannot delete this stream because it has ${subjectsSnap.size} mapped subject(s). Remove mapped subjects first.`);
+    }
+
+    const docRef = doc(db, COLLECTION_NAME, streamId);
     await deleteDoc(docRef);
     return { id: streamId, success: true };
   } catch (error) {
-    console.error('Error deleting stream:', error);
     throw error;
   }
 };

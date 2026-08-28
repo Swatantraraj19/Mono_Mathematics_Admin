@@ -36,7 +36,6 @@ export const extractYouTubeVideoId = (url) => {
 
 /**
  * Fetch videos strictly scoped to a specific chapter.
- * Eliminates downloading the entire institute's video database.
  */
 export const fetchVideosByChapter = async (instituteId = 'mono_math_01', chapterId) => {
   if (!chapterId) return [];
@@ -52,10 +51,8 @@ export const fetchVideosByChapter = async (instituteId = 'mono_math_01', chapter
       ...docSnap.data(),
     }));
 
-    // Client-side sort by orderIndex / lecture number ascending
     return list.sort((a, b) => (Number(a.orderIndex) || 0) - (Number(b.orderIndex) || 0));
   } catch (error) {
-    console.error('Error fetching chapter videos:', error);
     throw error;
   }
 };
@@ -82,13 +79,12 @@ export const searchGlobalVideos = async (instituteId = 'mono_math_01', searchTex
 
     return all.filter((v) => (v.title || '').toLowerCase().includes(trimmed));
   } catch (error) {
-    console.error('Error searching videos:', error);
     throw error;
   }
 };
 
 /**
- * Fetch total video count for dashboard or stats.
+ * Fetch total video count for dashboard.
  */
 export const fetchTotalVideoCount = async (instituteId = 'mono_math_01') => {
   try {
@@ -99,7 +95,6 @@ export const fetchTotalVideoCount = async (instituteId = 'mono_math_01') => {
     const snapshot = await getDocs(q);
     return snapshot.size;
   } catch (error) {
-    console.error('Error fetching total video count:', error);
     return 0;
   }
 };
@@ -123,7 +118,6 @@ export const createVideo = async (videoData, instituteId = 'mono_math_01') => {
       duration: (videoData.duration || '').trim() || 'N/A',
       orderIndex: Number(videoData.orderIndex) || 1,
 
-      // Context hierarchy
       classId: videoData.classId,
       className: videoData.className,
       streamId: videoData.streamId || null,
@@ -142,7 +136,6 @@ export const createVideo = async (videoData, instituteId = 'mono_math_01') => {
     const docRef = await addDoc(collection(db, VIDEOS_COLLECTION), docData);
     return { id: docRef.id, ...docData };
   } catch (error) {
-    console.error('Error creating video:', error);
     throw error;
   }
 };
@@ -170,7 +163,6 @@ export const updateVideo = async (videoId, updateData) => {
     await updateDoc(docRef, sanitizedData);
     return { id: videoId, ...sanitizedData };
   } catch (error) {
-    console.error('Error updating video:', error);
     throw error;
   }
 };
@@ -192,7 +184,6 @@ export const deleteVideo = async (videoId) => {
     await deleteDoc(docRef);
     return { id: videoId, success: true };
   } catch (error) {
-    console.error('Error deleting video:', error);
     throw error;
   }
 };

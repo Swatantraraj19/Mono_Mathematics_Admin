@@ -15,7 +15,6 @@ const COLLECTION_NAME = 'classes';
 
 /**
  * Fetch all classes for an institute.
- * Uses client-side sorting by orderIndex to avoid requiring Firestore composite indexes.
  */
 export const fetchClasses = async (instituteId = 'mono_math_01') => {
   try {
@@ -29,10 +28,8 @@ export const fetchClasses = async (instituteId = 'mono_math_01') => {
       ...docSnap.data(),
     }));
 
-    // Client-side sort by orderIndex ascending
     return list.sort((a, b) => (Number(a.orderIndex) || 0) - (Number(b.orderIndex) || 0));
   } catch (error) {
-    console.error('Error fetching classes:', error);
     throw error;
   }
 };
@@ -56,7 +53,6 @@ export const createClass = async (classData, instituteId = 'mono_math_01') => {
     const docRef = await addDoc(collection(db, COLLECTION_NAME), docData);
     return { id: docRef.id, ...docData };
   } catch (error) {
-    console.error('Error creating class:', error);
     throw error;
   }
 };
@@ -75,7 +71,6 @@ export const updateClass = async (classId, updateData) => {
     await updateDoc(docRef, sanitizedData);
     return { id: classId, ...sanitizedData };
   } catch (error) {
-    console.error('Error updating class:', error);
     throw error;
   }
 };
@@ -93,7 +88,6 @@ export const toggleClassStatus = async (classId, currentStatus) => {
  */
 export const deleteClass = async (classId) => {
   try {
-    // Check if chapters or subjects exist under this class
     const subjectsQuery = query(
       collection(db, 'classSubjects'),
       where('classId', '==', classId)
@@ -108,7 +102,6 @@ export const deleteClass = async (classId) => {
     await deleteDoc(docRef);
     return { id: classId, success: true };
   } catch (error) {
-    console.error('Error deleting class:', error);
     throw error;
   }
 };
