@@ -15,6 +15,7 @@ import { fetchStreams } from '../../services/streamService';
 import { fetchClassSubjects } from '../../services/subjectService';
 import { fetchChapters } from '../../services/chapterService';
 import { fetchTotalVideoCount } from '../../services/videoService';
+import { fetchLiveClasses } from '../../services/liveClassService';
 
 export const Dashboard = () => {
   const { userProfile } = useAuth();
@@ -31,12 +32,13 @@ export const Dashboard = () => {
   useEffect(() => {
     const loadCounts = async () => {
       try {
-        const [classesData, streamsData, subjectsData, chaptersData, videosCount] = await Promise.allSettled([
+        const [classesData, streamsData, subjectsData, chaptersData, videosCount, liveClassesData] = await Promise.allSettled([
           fetchClasses('mono_math_01'),
           fetchStreams('mono_math_01'),
           fetchClassSubjects('mono_math_01'),
           fetchChapters('mono_math_01'),
           fetchTotalVideoCount('mono_math_01'),
+          fetchLiveClasses('mono_math_01'),
         ]);
 
         const totalClasses = classesData.status === 'fulfilled' ? classesData.value.length : 0;
@@ -44,6 +46,7 @@ export const Dashboard = () => {
         const totalSubjects = subjectsData.status === 'fulfilled' ? subjectsData.value.length : 0;
         const totalChapters = chaptersData.status === 'fulfilled' ? chaptersData.value.length : 0;
         const totalVideos = videosCount.status === 'fulfilled' ? videosCount.value : 0;
+        const totalLiveClasses = liveClassesData.status === 'fulfilled' ? liveClassesData.value.length : 0;
 
         setCounts({
           classes: totalClasses,
@@ -51,7 +54,7 @@ export const Dashboard = () => {
           subjects: totalSubjects,
           chapters: totalChapters,
           videos: totalVideos,
-          liveClasses: 0,
+          liveClasses: totalLiveClasses,
         });
       } catch (err) {
         console.error('Error loading dashboard stats:', err);
@@ -69,7 +72,7 @@ export const Dashboard = () => {
     { title: 'Mapped Subjects', count: loading ? '-' : counts.subjects.toString(), subtitle: 'Core curriculum', icon: BookOpen, path: '/subjects', color: 'text-blue-600 bg-blue-50 border-blue-100' },
     { title: 'Course Chapters', count: loading ? '-' : counts.chapters.toString(), subtitle: 'Structured units', icon: Bookmark, path: '/chapters', color: 'text-amber-600 bg-amber-50 border-amber-100' },
     { title: 'Recorded Videos', count: loading ? '-' : counts.videos.toString(), subtitle: 'YouTube Unlisted', icon: Video, path: '/videos', color: 'text-emerald-600 bg-emerald-50 border-emerald-100' },
-    { title: 'Live Classes', count: '0', subtitle: 'Scheduled on Zoom', icon: Radio, path: '/live-classes', color: 'text-rose-600 bg-rose-50 border-rose-100' },
+    { title: 'Live Classes', count: loading ? '-' : counts.liveClasses.toString(), subtitle: 'Scheduled on Zoom', icon: Radio, path: '/live-classes', color: 'text-rose-600 bg-rose-50 border-rose-100' },
   ];
 
   return (
