@@ -10,6 +10,10 @@ import {
   Layers,
   GraduationCap,
   RefreshCw,
+  ChevronDown,
+  ChevronRight,
+  FolderOpen,
+  Folder,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import {
@@ -28,7 +32,6 @@ import { Select } from '../../components/common/Select';
 import { Badge } from '../../components/common/Badge';
 import { Modal } from '../../components/common/Modal';
 import { ConfirmDialog } from '../../components/common/ConfirmDialog';
-import { Table } from '../../components/common/Table';
 import { EmptyState } from '../../components/common/EmptyState';
 import { SkeletonLoader } from '../../components/common/SkeletonLoader';
 
@@ -38,10 +41,14 @@ export const SubjectsPage = () => {
   const [streams, setStreams] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Filters
+  // Filters & Search
   const [selectedClassFilter, setSelectedClassFilter] = useState('all');
   const [selectedStreamFilter, setSelectedStreamFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
+
+  // Accordion Expand/Collapse State (keyed by classId or classId_streamId)
+  const [expandedClasses, setExpandedClasses] = useState({});
+  const [expandedStreams, setExpandedStreams] = useState({});
 
   // Modal states
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -88,41 +95,185 @@ export const SubjectsPage = () => {
     loadData();
   }, []);
 
-  // Determine if the selected class in filter has streams (Classes 11 & 12)
-  const activeClassObj = classes.find((c) => c.id === selectedClassFilter);
-  const filterClassHasStreams = activeClassObj?.hasStreams || activeClassObj?.name?.includes('11') || activeClassObj?.name?.includes('12');
+  // Class info helpers
+  const activeClassFilterObj = classes.find((c) => c.id === selectedClassFilter);
+  const filterClassHasStreams =
+    activeClassFilterObj?.hasStreams ||
+    activeClassFilterObj?.name?.includes('11') ||
+    activeClassFilterObj?.name?.includes('12');
 
-  // Determine if the form's selected class has streams
   const formClassObj = classes.find((c) => c.id === formClassId);
-  const formClassHasStreams = formClassObj?.hasStreams || formClassObj?.name?.includes('11') || formClassObj?.name?.includes('12');
+  const formClassHasStreams =
+    formClassObj?.hasStreams ||
+    formClassObj?.name?.includes('11') ||
+    formClassObj?.name?.includes('12');
 
-  // Filtered and Structured Subjects (Strict Class Order -> Stream -> Subject Name)
-  const filteredSubjects = useMemo(() => {
-    const list = classSubjects.filter((item) => {
-      const matchesSearch = (item.subjectName || '').toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesClass = selectedClassFilter === 'all' || item.classId === selectedClassFilter;
-      const matchesStream =
-        !filterClassHasStreams || selectedStreamFilter === 'all' || item.streamId === selectedStreamFilter;
-      return matchesSearch && matchesClass && matchesStream;
+  // Toggle Class Accordion
+  const toggleClassAccordion = (classId) => {
+    setExpandedClasses((prev) => ({
+      ...prev,
+      [classId]: !prev[classId],
+    }));
+  };
+
+  // Toggle Stream Accordion
+  const toggleStreamAccordion = (streamKey) => {
+    setExpandedStreams((prev) => ({
+      ...prev,
+      [streamKey]: !prev[streamKey],
+    }));
+  };
+
+  // Group and structure subjects hierarchically:
+  // Classes 6-10: Class -> Direct Subjects
+  // Classes 11-12: Class -> Streams -> Subjects
+  const structuredHierarchy = useMemo(() => {
+    const trimmedSearch = searchTerm.trim().toLowerCase();
+
+    // 1. Filter classes list based on selectedClassFilter
+    let targetClasses = classes.filter((cls) => {
+      if (selectedClassFilter !== 'all' && cls.id !== selectedClassFilter) {
+        return false;
+      }
+      return true;
     });
 
-    const getClassOrder = (classId, className) => {
-      const cls = classes.find((c) => c.id === classId);
-      if (cls && typeof cls.orderIndex === 'number') return cls.orderIndex;
-      const num = parseInt((className || '').replace(/[^0-9]/g, ''), 10);
-      return isNaN(num) ? 99 : num;
-    };
+    // Sort classes by orderIndex ascending
+    targetClasses.sort((a, b) => (Number(a.orderIndex) || 0) - (Number(b.orderIndex) || 0));
 
-    return list.sort((a, b) => {
-      const classDiff = getClassOrder(a.classId, a.className) - getClassOrder(b.classId, b.className);
-      if (classDiff !== 0) return classDiff;
+    // 2. Build structured tree
+    const result = [];
 
-      const streamDiff = (a.streamName || '').localeCompare(b.streamName || '');
-      if (streamDiff !== 0) return streamDiff;
+    targetClasses.forEach((cls) => {
+      const isSenior = cls.hasStreams || cls.name.includes('11') || cls.name.includes('12');
+      const allClassSubjects = classSubjects.filter((s) => s.classId === cls.id);
 
-      return (a.subjectName || '').localeCompare(b.subjectName || '');
+      if (!isSenior) {
+        // Classes 6-10: Direct Subjects
+        let subjects = allClassSubjects.filter((s) => {
+          if (trimmedSearch && !(s.subjectName || '').toLowerCase().includes(trimmedSearch)) {
+            return false;
+          }
+          return true;
+        });
+
+        subjects.sort((a, b) => (a.subjectName || '').localeCompare(b.subjectName || ''));
+
+        // Include this class if it has subjects or if no search is active
+        if (!trimmedSearch || subjects.length > 0) {
+          result.push({
+            classId: cls.id,
+            className: cls.name,
+            isSenior: false,
+            totalSubjects: subjects.length,
+            subjects,
+            hasMatches: trimmedSearch.length > 0 && subjects.length > 0,
+          });
+        }
+      } else {
+        // Classes 11-12: Stream -> Subjects Grouping
+        const streamGroups = [];
+        let seniorTotalMatchingSubjects = 0;
+
+        // Streams to evaluate
+        const targetStreams = streams.filter((stm) => {
+          if (filterClassHasStreams && selectedStreamFilter !== 'all' && stm.id !== selectedStreamFilter) {
+            return false;
+          }
+          return true;
+        });
+
+        targetStreams.sort((a, b) => (Number(a.orderIndex) || 0) - (Number(b.orderIndex) || 0));
+
+        targetStreams.forEach((stm) => {
+          let streamSubjects = allClassSubjects.filter((s) => {
+            // Match stream either by streamId or by streamName
+            const matchStream =
+              s.streamId === stm.id ||
+              (s.streamName && s.streamName.toLowerCase() === stm.name.toLowerCase());
+            if (!matchStream) return false;
+
+            if (trimmedSearch && !(s.subjectName || '').toLowerCase().includes(trimmedSearch)) {
+              return false;
+            }
+            return true;
+          });
+
+          streamSubjects.sort((a, b) => (a.subjectName || '').localeCompare(b.subjectName || ''));
+          seniorTotalMatchingSubjects += streamSubjects.length;
+
+          if (!trimmedSearch || streamSubjects.length > 0) {
+            streamGroups.push({
+              streamId: stm.id,
+              streamName: stm.name,
+              streamKey: `${cls.id}_${stm.id}`,
+              totalSubjects: streamSubjects.length,
+              subjects: streamSubjects,
+              hasMatches: trimmedSearch.length > 0 && streamSubjects.length > 0,
+            });
+          }
+        });
+
+        // Also check if any direct subjects exist under this class without a stream
+        const unassignedSubjects = allClassSubjects.filter((s) => !s.streamId && !s.streamName);
+        if (unassignedSubjects.length > 0) {
+          let matchingUnassigned = unassignedSubjects.filter((s) => {
+            if (trimmedSearch && !(s.subjectName || '').toLowerCase().includes(trimmedSearch)) {
+              return false;
+            }
+            return true;
+          });
+          if (!trimmedSearch || matchingUnassigned.length > 0) {
+            streamGroups.push({
+              streamId: 'direct',
+              streamName: 'General / Common Subjects',
+              streamKey: `${cls.id}_direct`,
+              totalSubjects: matchingUnassigned.length,
+              subjects: matchingUnassigned,
+              hasMatches: trimmedSearch.length > 0 && matchingUnassigned.length > 0,
+            });
+          }
+        }
+
+        if (!trimmedSearch || seniorTotalMatchingSubjects > 0) {
+          result.push({
+            classId: cls.id,
+            className: cls.name,
+            isSenior: true,
+            totalSubjects: seniorTotalMatchingSubjects,
+            streamGroups,
+            hasMatches: trimmedSearch.length > 0 && seniorTotalMatchingSubjects > 0,
+          });
+        }
+      }
     });
-  }, [classSubjects, classes, searchTerm, selectedClassFilter, selectedStreamFilter, filterClassHasStreams]);
+
+    return result;
+  }, [classes, streams, classSubjects, selectedClassFilter, selectedStreamFilter, searchTerm, filterClassHasStreams]);
+
+  // When search is active, automatically expand matching accordions
+  useEffect(() => {
+    if (searchTerm.trim()) {
+      const autoExpandedClasses = {};
+      const autoExpandedStreams = {};
+
+      structuredHierarchy.forEach((node) => {
+        if (node.hasMatches) {
+          autoExpandedClasses[node.classId] = true;
+          if (node.isSenior && node.streamGroups) {
+            node.streamGroups.forEach((sg) => {
+              if (sg.hasMatches) {
+                autoExpandedStreams[sg.streamKey] = true;
+              }
+            });
+          }
+        }
+      });
+
+      setExpandedClasses((prev) => ({ ...prev, ...autoExpandedClasses }));
+      setExpandedStreams((prev) => ({ ...prev, ...autoExpandedStreams }));
+    }
+  }, [searchTerm, structuredHierarchy]);
 
   // Open Create Modal
   const handleOpenCreateModal = () => {
@@ -209,6 +360,12 @@ export const SubjectsPage = () => {
       } else {
         await mapSubjectToClass(payload, 'mono_math_01');
         toast.success(`Added ${payload.subjectName} to ${payload.className}!`);
+
+        // Automatically expand the added class accordion
+        setExpandedClasses((prev) => ({ ...prev, [cls.id]: true }));
+        if (stm) {
+          setExpandedStreams((prev) => ({ ...prev, [`${cls.id}_${stm.id}`]: true }));
+        }
       }
       setIsModalOpen(false);
       loadData();
@@ -252,6 +409,11 @@ export const SubjectsPage = () => {
     }
   };
 
+  // Count total subjects displayed
+  const totalVisibleSubjects = useMemo(() => {
+    return structuredHierarchy.reduce((acc, node) => acc + (node.totalSubjects || 0), 0);
+  }, [structuredHierarchy]);
+
   return (
     <div className="space-y-4">
       {/* Header & Add Button */}
@@ -262,7 +424,7 @@ export const SubjectsPage = () => {
             Subject Management
           </h2>
           <p className="text-xs text-slate-500 mt-0.5">
-            Configure academic subjects mapped directly to Classes 6–10 and via Streams to Classes 11–12.
+            Organize academic subjects grouped by class and stream hierarchy.
           </p>
         </div>
 
@@ -272,18 +434,18 @@ export const SubjectsPage = () => {
           icon={Plus}
           onClick={handleOpenCreateModal}
           disabled={classes.length === 0}
-          className="w-full sm:w-auto"
+          className="w-full sm:w-auto shadow-xs"
         >
           Add Subject
         </Button>
       </div>
 
-      {/* Filter and Search Bar with Hierarchy Cascading */}
+      {/* Filter and Search Bar */}
       <div className="admin-card p-3 flex flex-col md:flex-row items-center justify-between gap-2.5">
-        <div className="w-full md:w-64">
+        <div className="w-full md:w-72">
           <Input
             type="text"
-            placeholder="Search subject name..."
+            placeholder="Search subject name (e.g. Mathematics)..."
             icon={Search}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -293,7 +455,7 @@ export const SubjectsPage = () => {
 
         <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
           {/* Class Filter */}
-          <div className="w-full sm:w-44">
+          <div className="flex-1 sm:w-44">
             <Select
               value={selectedClassFilter}
               onChange={(e) => {
@@ -308,7 +470,7 @@ export const SubjectsPage = () => {
             />
           </div>
 
-          {/* Stream Filter */}
+          {/* Stream Filter (Only shown when Class 11/12 is selected or available) */}
           {filterClassHasStreams && (
             <div className="w-full sm:w-40">
               <Select
@@ -334,16 +496,16 @@ export const SubjectsPage = () => {
         </div>
       </div>
 
-      {/* Content Area */}
+      {/* Accordion Hierarchy List View */}
       {loading ? (
         <SkeletonLoader rows={5} />
-      ) : filteredSubjects.length === 0 ? (
+      ) : structuredHierarchy.length === 0 ? (
         <EmptyState
           icon={BookOpen}
           title="No Subjects Found"
           description={
             searchTerm
-              ? `No subjects matching "${searchTerm}".`
+              ? `No subjects matching "${searchTerm}". Try a different keyword.`
               : classes.length === 0
               ? 'Please add classes first from the Classes page before adding subjects.'
               : 'Click Add Subject button above to map subjects to classes and streams.'
@@ -352,181 +514,282 @@ export const SubjectsPage = () => {
           onAction={classes.length > 0 ? handleOpenCreateModal : undefined}
         />
       ) : (
-        <>
-          {/* 1. Mobile Cards View (< 640px) */}
-          <div className="grid grid-cols-1 gap-2.5 sm:hidden">
-            {filteredSubjects.map((item) => (
+        <div className="space-y-3">
+          {/* Result summary indicator */}
+          <div className="flex items-center justify-between text-xs text-slate-500 px-1">
+            <span>
+              Showing <strong className="text-slate-700 font-semibold">{totalVisibleSubjects}</strong> subject{totalVisibleSubjects !== 1 ? 's' : ''} across <strong className="text-slate-700 font-semibold">{structuredHierarchy.length}</strong> class{structuredHierarchy.length !== 1 ? 'es' : ''}
+            </span>
+            {searchTerm.trim() && (
+              <span className="text-primary-600 font-medium bg-primary-50 px-2 py-0.5 rounded-md text-[11px]">
+                Search filter active: matching sections auto-expanded
+              </span>
+            )}
+          </div>
+
+          {/* Render Each Class Accordion */}
+          {structuredHierarchy.map((classGroup) => {
+            const isClassExpanded = expandedClasses[classGroup.classId] || Boolean(searchTerm.trim());
+
+            return (
               <div
-                key={item.id}
-                className="admin-card p-3.5 flex flex-col justify-between space-y-3"
+                key={classGroup.classId}
+                className={`bg-white rounded-xl border transition-all duration-200 overflow-hidden shadow-xs ${
+                  isClassExpanded ? 'border-primary-200 ring-1 ring-primary-500/10' : 'border-slate-200 hover:border-slate-300'
+                }`}
               >
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-lg bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-700 font-bold text-xs shrink-0">
-                      {item.subjectName?.charAt(0) || 'S'}
-                    </div>
-                    <div>
-                      <h4 className="text-sm font-bold text-slate-900">{item.subjectName}</h4>
-                      <span className="text-[11px] text-slate-500 font-medium">{item.className}</span>
-                    </div>
-                  </div>
-
-                  <Badge variant={item.status === 'active' ? 'active' : 'inactive'}>
-                    {item.status === 'active' ? 'Active' : 'Inactive'}
-                  </Badge>
-                </div>
-
-                <div className="flex items-center gap-1.5 flex-wrap">
-                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-xs font-semibold bg-slate-100 text-slate-700">
-                    <GraduationCap className="w-3 h-3 text-slate-500" />
-                    {item.className}
-                  </span>
-
-                  {item.streamName && (
-                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-xs font-semibold bg-purple-50 text-purple-700 border border-purple-200">
-                      <Layers className="w-3 h-3" />
-                      {item.streamName}
-                    </span>
-                  )}
-                </div>
-
-                <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
-                  <button
-                    type="button"
-                    onClick={() => handleToggleStatus(item)}
-                    className={`text-xs font-semibold flex items-center gap-1 ${
-                      item.status === 'active' ? 'text-slate-500' : 'text-emerald-600'
-                    }`}
-                  >
-                    {item.status === 'active' ? <XCircle className="w-3.5 h-3.5" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
-                    <span>{item.status === 'active' ? 'Deactivate' : 'Activate'}</span>
-                  </button>
-
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => handleOpenEditModal(item)}
-                      className="p-1.5 rounded-lg text-slate-500 hover:bg-slate-100 cursor-pointer"
-                      title="Edit"
-                    >
-                      <Edit2 className="w-4 h-4" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setDeleteTarget(item)}
-                      className="p-1.5 rounded-lg text-status-error hover:bg-red-50 cursor-pointer"
-                      title="Delete"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* 2. Desktop Table View (>= 640px) */}
-          <div className="hidden sm:block">
-            <Table>
-              <Table.Header>
-                <Table.Row>
-                  <Table.Head className="w-36">Class</Table.Head>
-                  <Table.Head className="w-36">Stream</Table.Head>
-                  <Table.Head>Subject Name</Table.Head>
-                  <Table.Head className="w-28">Status</Table.Head>
-                  <Table.Head className="text-right w-28 pr-6">Actions</Table.Head>
-                </Table.Row>
-              </Table.Header>
-              <Table.Body>
-                {filteredSubjects.map((item) => (
-                  <Table.Row key={item.id}>
-                    {/* Class */}
-                    <Table.Cell>
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold bg-indigo-50 text-primary-700 border border-indigo-100">
-                        <GraduationCap className="w-3.5 h-3.5" />
-                        {item.className}
-                      </span>
-                    </Table.Cell>
-
-                    {/* Stream */}
-                    <Table.Cell>
-                      {item.streamName ? (
-                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-xs font-semibold bg-purple-50 text-purple-700 border border-purple-200">
-                          <Layers className="w-3 h-3" />
-                          {item.streamName}
-                        </span>
+                {/* 1. Class Accordion Header Bar */}
+                <button
+                  type="button"
+                  onClick={() => toggleClassAccordion(classGroup.classId)}
+                  className={`w-full px-4 py-3 sm:py-3.5 flex items-center justify-between text-left transition-colors cursor-pointer select-none ${
+                    isClassExpanded ? 'bg-slate-50/80 border-b border-slate-100' : 'bg-white hover:bg-slate-50/50'
+                  }`}
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className={`p-1.5 rounded-lg transition-colors ${
+                      isClassExpanded ? 'bg-primary-50 text-primary-600' : 'bg-slate-100 text-slate-500'
+                    }`}>
+                      {isClassExpanded ? (
+                        <FolderOpen className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
                       ) : (
-                        <span className="text-xs text-slate-400 font-medium">
-                          Direct
-                        </span>
+                        <Folder className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
                       )}
-                    </Table.Cell>
+                    </div>
 
-                    {/* Subject Name */}
-                    <Table.Cell>
+                    <div className="min-w-0">
                       <div className="flex items-center gap-2">
-                        <div className="w-7 h-7 rounded-lg bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-700 font-bold text-xs shrink-0">
-                          {item.subjectName?.charAt(0) || 'S'}
-                        </div>
-                        <span className="text-sm font-bold text-slate-900">{item.subjectName}</span>
+                        <span className="text-sm sm:text-base font-bold text-slate-900 truncate">
+                          {classGroup.className}
+                        </span>
+
+                        {classGroup.isSenior ? (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-purple-50 text-purple-700 border border-purple-200 shrink-0">
+                            <Layers className="w-3 h-3" />
+                            Stream-Based (11–12)
+                          </span>
+                        ) : (
+                          <span className="text-[11px] text-slate-400 font-medium hidden sm:inline-block shrink-0">
+                            Direct Curriculum
+                          </span>
+                        )}
                       </div>
-                    </Table.Cell>
+                    </div>
+                  </div>
 
-                    {/* Status */}
-                    <Table.Cell>
-                      <Badge variant={item.status === 'active' ? 'active' : 'inactive'}>
-                        {item.status === 'active' ? 'Active' : 'Inactive'}
-                      </Badge>
-                    </Table.Cell>
+                  <div className="flex items-center gap-2.5 shrink-0">
+                    <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700">
+                      {classGroup.totalSubjects} Subject{classGroup.totalSubjects !== 1 ? 's' : ''}
+                    </span>
 
-                    {/* Actions */}
-                    <Table.Cell className="text-right pr-6">
-                      <div className="flex items-center justify-end gap-1">
-                        {/* Status Toggle */}
-                        <button
-                          type="button"
-                          onClick={() => handleToggleStatus(item)}
-                          className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
-                            item.status === 'active'
-                              ? 'text-emerald-600 hover:bg-emerald-50'
-                              : 'text-slate-400 hover:bg-slate-100'
-                          }`}
-                          title={item.status === 'active' ? 'Click to Deactivate' : 'Click to Activate'}
-                        >
-                          {item.status === 'active' ? (
-                            <CheckCircle2 className="w-4 h-4" />
-                          ) : (
-                            <XCircle className="w-4 h-4" />
-                          )}
-                        </button>
+                    <div className="text-slate-400">
+                      {isClassExpanded ? (
+                        <ChevronDown className="w-4 h-4" />
+                      ) : (
+                        <ChevronRight className="w-4 h-4" />
+                      )}
+                    </div>
+                  </div>
+                </button>
 
-                        {/* Edit */}
-                        <button
-                          type="button"
-                          onClick={() => handleOpenEditModal(item)}
-                          className="p-1.5 rounded-lg text-slate-500 hover:text-primary-600 hover:bg-indigo-50 transition-colors cursor-pointer"
-                          title="Edit Subject"
-                        >
-                          <Edit2 className="w-4 h-4" />
-                        </button>
+                {/* 2. Class Accordion Body Content */}
+                {isClassExpanded && (
+                  <div className="divide-y divide-slate-100">
+                    {/* A. For Direct Classes (Classes 6 to 10) */}
+                    {!classGroup.isSenior && (
+                      <div>
+                        {classGroup.subjects.length === 0 ? (
+                          <div className="py-6 text-center text-xs text-slate-400">
+                            No subjects mapped to {classGroup.className} yet.
+                          </div>
+                        ) : (
+                          <div className="divide-y divide-slate-100">
+                            {classGroup.subjects.map((sub) => (
+                              <div
+                                key={sub.id}
+                                className="px-4 py-2.5 sm:py-3 flex items-center justify-between gap-3 hover:bg-slate-50/70 transition-colors"
+                              >
+                                {/* Subject Name & Icon */}
+                                <div className="flex items-center gap-2.5 min-w-0">
+                                  <div className="w-7 h-7 rounded-lg bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-700 font-bold text-xs shrink-0">
+                                    {sub.subjectName?.charAt(0) || 'S'}
+                                  </div>
+                                  <div className="min-w-0">
+                                    <span className="text-xs sm:text-sm font-semibold text-slate-900 block truncate">
+                                      {sub.subjectName}
+                                    </span>
+                                  </div>
+                                </div>
 
-                        {/* Delete */}
-                        <button
-                          type="button"
-                          onClick={() => setDeleteTarget(item)}
-                          className="p-1.5 rounded-lg text-slate-400 hover:text-status-error hover:bg-red-50 transition-colors cursor-pointer"
-                          title="Delete Subject"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                                {/* Status & Actions */}
+                                <div className="flex items-center gap-2 sm:gap-4 shrink-0">
+                                  <Badge variant={sub.status === 'active' ? 'active' : 'inactive'} className="text-[11px]">
+                                    {sub.status === 'active' ? 'Active' : 'Inactive'}
+                                  </Badge>
+
+                                  <div className="flex items-center gap-1">
+                                    <button
+                                      type="button"
+                                      onClick={() => handleToggleStatus(sub)}
+                                      className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+                                        sub.status === 'active'
+                                          ? 'text-emerald-600 hover:bg-emerald-50'
+                                          : 'text-slate-400 hover:bg-slate-100'
+                                      }`}
+                                      title={sub.status === 'active' ? 'Deactivate Subject' : 'Activate Subject'}
+                                    >
+                                      {sub.status === 'active' ? (
+                                        <CheckCircle2 className="w-4 h-4" />
+                                      ) : (
+                                        <XCircle className="w-4 h-4" />
+                                      )}
+                                    </button>
+
+                                    <button
+                                      type="button"
+                                      onClick={() => handleOpenEditModal(sub)}
+                                      className="p-1.5 rounded-lg text-slate-500 hover:text-primary-600 hover:bg-indigo-50 transition-colors cursor-pointer"
+                                      title="Edit Subject"
+                                    >
+                                      <Edit2 className="w-4 h-4" />
+                                    </button>
+
+                                    <button
+                                      type="button"
+                                      onClick={() => setDeleteTarget(sub)}
+                                      className="p-1.5 rounded-lg text-slate-400 hover:text-status-error hover:bg-red-50 transition-colors cursor-pointer"
+                                      title="Delete Subject"
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
-                    </Table.Cell>
-                  </Table.Row>
-                ))}
-              </Table.Body>
-            </Table>
-          </div>
-        </>
+                    )}
+
+                    {/* B. For Senior Classes (Classes 11 & 12): Nested Stream Accordions */}
+                    {classGroup.isSenior && (
+                      <div className="p-2 sm:p-3 space-y-2 bg-slate-50/40">
+                        {classGroup.streamGroups.map((streamGroup) => {
+                          const isStreamExpanded =
+                            expandedStreams[streamGroup.streamKey] ?? (searchTerm.trim() ? true : true);
+
+                          return (
+                            <div
+                              key={streamGroup.streamKey}
+                              className="bg-white rounded-lg border border-slate-200 overflow-hidden shadow-2xs"
+                            >
+                              {/* Stream Nested Header */}
+                              <button
+                                type="button"
+                                onClick={() => toggleStreamAccordion(streamGroup.streamKey)}
+                                className="w-full px-3.5 py-2.5 flex items-center justify-between text-left hover:bg-slate-50/80 transition-colors cursor-pointer select-none bg-slate-50/30"
+                              >
+                                <div className="flex items-center gap-2 min-w-0">
+                                  <Layers className="w-4 h-4 text-purple-600 shrink-0" />
+                                  <span className="text-xs sm:text-sm font-bold text-slate-800 truncate">
+                                    {streamGroup.streamName}
+                                  </span>
+                                </div>
+
+                                <div className="flex items-center gap-2 shrink-0">
+                                  <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-100">
+                                    {streamGroup.totalSubjects} Subject{streamGroup.totalSubjects !== 1 ? 's' : ''}
+                                  </span>
+                                  <div className="text-slate-400">
+                                    {isStreamExpanded ? (
+                                      <ChevronDown className="w-3.5 h-3.5" />
+                                    ) : (
+                                      <ChevronRight className="w-3.5 h-3.5" />
+                                    )}
+                                  </div>
+                                </div>
+                              </button>
+
+                              {/* Stream Subjects List */}
+                              {isStreamExpanded && (
+                                <div className="divide-y divide-slate-100 border-t border-slate-100">
+                                  {streamGroup.subjects.length === 0 ? (
+                                    <div className="py-4 text-center text-xs text-slate-400">
+                                      No subjects mapped under {streamGroup.streamName} yet.
+                                    </div>
+                                  ) : (
+                                    streamGroup.subjects.map((sub) => (
+                                      <div
+                                        key={sub.id}
+                                        className="px-3.5 py-2 sm:py-2.5 flex items-center justify-between gap-3 hover:bg-slate-50/70 transition-colors"
+                                      >
+                                        <div className="flex items-center gap-2 min-w-0">
+                                          <div className="w-6 h-6 rounded-md bg-purple-50 border border-purple-100 flex items-center justify-center text-purple-700 font-bold text-[11px] shrink-0">
+                                            {sub.subjectName?.charAt(0) || 'S'}
+                                          </div>
+                                          <span className="text-xs sm:text-sm font-semibold text-slate-900 truncate">
+                                            {sub.subjectName}
+                                          </span>
+                                        </div>
+
+                                        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+                                          <Badge variant={sub.status === 'active' ? 'active' : 'inactive'} className="text-[10px] py-0 px-2">
+                                            {sub.status === 'active' ? 'Active' : 'Inactive'}
+                                          </Badge>
+
+                                          <div className="flex items-center gap-0.5">
+                                            <button
+                                              type="button"
+                                              onClick={() => handleToggleStatus(sub)}
+                                              className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+                                                sub.status === 'active'
+                                                  ? 'text-emerald-600 hover:bg-emerald-50'
+                                                  : 'text-slate-400 hover:bg-slate-100'
+                                              }`}
+                                              title={sub.status === 'active' ? 'Deactivate' : 'Activate'}
+                                            >
+                                              {sub.status === 'active' ? (
+                                                <CheckCircle2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                                              ) : (
+                                                <XCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                                              )}
+                                            </button>
+
+                                            <button
+                                              type="button"
+                                              onClick={() => handleOpenEditModal(sub)}
+                                              className="p-1.5 rounded-lg text-slate-500 hover:text-primary-600 hover:bg-indigo-50 transition-colors cursor-pointer"
+                                              title="Edit"
+                                            >
+                                              <Edit2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                                            </button>
+
+                                            <button
+                                              type="button"
+                                              onClick={() => setDeleteTarget(sub)}
+                                              className="p-1.5 rounded-lg text-slate-400 hover:text-status-error hover:bg-red-50 transition-colors cursor-pointer"
+                                              title="Delete"
+                                            >
+                                              <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                                            </button>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    ))
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
       )}
 
       {/* Add / Edit Subject Modal */}
