@@ -86,10 +86,11 @@ export const toggleClassStatus = async (classId, currentStatus) => {
 /**
  * Delete a class with dependency check.
  */
-export const deleteClass = async (classId) => {
+export const deleteClass = async (classId, instituteId = 'mono_math_01') => {
   try {
     const subjectsQuery = query(
       collection(db, 'classSubjects'),
+      where('instituteId', '==', instituteId),
       where('classId', '==', classId)
     );
     const subjectsSnap = await getDocs(subjectsQuery);

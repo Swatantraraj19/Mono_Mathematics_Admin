@@ -193,10 +193,11 @@ export const toggleChapterStatus = async (chapterId, currentStatus) => {
 /**
  * Delete a chapter with cascade dependency check.
  */
-export const deleteChapter = async (chapterId) => {
+export const deleteChapter = async (chapterId, instituteId = 'mono_math_01') => {
   try {
     const videosQuery = query(
       collection(db, 'videos'),
+      where('instituteId', '==', instituteId),
       where('chapterId', '==', chapterId)
     );
     const videosSnap = await getDocs(videosQuery);

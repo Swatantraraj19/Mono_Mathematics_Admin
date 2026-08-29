@@ -178,11 +178,12 @@ export const toggleClassSubjectStatus = async (classSubjectId, currentStatus) =>
 /**
  * Remove subject mapping with cascade check.
  */
-export const unmapSubjectFromClass = async (classSubjectId) => {
+export const unmapSubjectFromClass = async (classSubjectId, instituteId = 'mono_math_01') => {
   try {
     // Check if chapters exist under this classSubject
     const chaptersQuery = query(
       collection(db, 'chapters'),
+      where('instituteId', '==', instituteId),
       where('classSubjectId', '==', classSubjectId)
     );
     const chaptersSnap = await getDocs(chaptersQuery);

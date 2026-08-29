@@ -94,10 +94,11 @@ export const toggleStreamStatus = async (streamId, currentStatus) => {
 /**
  * Delete a stream with dependency check.
  */
-export const deleteStream = async (streamId) => {
+export const deleteStream = async (streamId, instituteId = 'mono_math_01') => {
   try {
     const subjectsQuery = query(
       collection(db, 'classSubjects'),
+      where('instituteId', '==', instituteId),
       where('streamId', '==', streamId)
     );
     const subjectsSnap = await getDocs(subjectsQuery);
