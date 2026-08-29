@@ -1,10 +1,10 @@
 import React, { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from './contexts/AuthContext';
 import { ProtectedRoute } from './components/layout/ProtectedRoute';
 import { AdminLayout } from './components/layout/AdminLayout';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
+import { AppToaster } from './components/common/AppToaster';
 import { Loader2 } from 'lucide-react';
 
 // Route-Level Code Splitting (React.lazy)
@@ -29,36 +29,9 @@ export default function App() {
     <ErrorBoundary>
       <BrowserRouter>
         <AuthProvider>
-          <Toaster
-            position="top-right"
-            toastOptions={{
-              duration: 4000,
-              style: {
-                background: '#FFFFFF',
-                color: '#0F172A',
-                border: '1px solid #E2E8F0',
-                borderRadius: '0.75rem',
-                padding: '12px 16px',
-                fontSize: '0.875rem',
-                boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.07), 0 2px 4px -2px rgb(0 0 0 / 0.07)',
-              },
-              success: {
-                iconTheme: {
-                  primary: '#16A34A',
-                  secondary: '#FFFFFF',
-                },
-              },
-              error: {
-                iconTheme: {
-                  primary: '#DC2626',
-                  secondary: '#FFFFFF',
-                },
-              },
-            }}
-          />
+          <AppToaster />
 
           <Routes>
-            {/* Public Auth Route */}
             <Route
               path="/login"
               element={
@@ -68,7 +41,6 @@ export default function App() {
               }
             />
 
-            {/* Protected Admin Routes: ProtectedRoute handles auth validation, AdminLayout houses inner content Suspense */}
             <Route element={<ProtectedRoute />}>
               <Route element={<AdminLayout />}>
                 <Route path="/" element={<Dashboard />} />
@@ -81,7 +53,6 @@ export default function App() {
               </Route>
             </Route>
 
-            {/* Catch-all redirect */}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </AuthProvider>
