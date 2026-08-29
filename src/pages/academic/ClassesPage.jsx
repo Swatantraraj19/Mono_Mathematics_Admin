@@ -38,6 +38,14 @@ const CLASS_OPTIONS = [
   { value: 'Class 12', label: 'Class 12 (Streams: Science, Commerce, Arts)', order: 12, hasStreams: true },
 ];
 
+export const getClassOrder = (cls) => {
+  if (cls?.orderIndex && Number(cls.orderIndex) > 0) {
+    return Number(cls.orderIndex);
+  }
+  const match = (cls?.name || '').match(/\d+/);
+  return match ? parseInt(match[0], 10) : 1;
+};
+
 export const ClassesPage = () => {
   const [classes, setClasses] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -61,8 +69,9 @@ export const ClassesPage = () => {
     try {
       setLoading(true);
       const data = await fetchClasses('mono_math_01');
-      setClasses(data);
-    } catch (err) {
+      const sorted = [...data].sort((a, b) => getClassOrder(a) - getClassOrder(b));
+      setClasses(sorted);
+    } catch {
       toast.error('Failed to load academic classes');
     } finally {
       setLoading(false);
@@ -303,7 +312,7 @@ export const ClassesPage = () => {
                     </div>
                     <div>
                       <h4 className="text-sm font-bold text-slate-900">{cls.name}</h4>
-                      <span className="text-[10px] font-mono text-slate-400">Order: #{cls.orderIndex}</span>
+                      <span className="text-[10px] font-mono text-slate-400">Order: #{getClassOrder(cls)}</span>
                     </div>
                   </div>
 
@@ -377,7 +386,7 @@ export const ClassesPage = () => {
                   <Table.Row key={cls.id}>
                     <Table.Cell>
                       <span className="font-mono text-xs font-semibold px-2 py-0.5 bg-slate-100 text-slate-700 rounded-md">
-                        #{cls.orderIndex}
+                        #{getClassOrder(cls)}
                       </span>
                     </Table.Cell>
 
