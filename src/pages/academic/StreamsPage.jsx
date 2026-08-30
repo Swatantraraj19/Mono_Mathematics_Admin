@@ -210,66 +210,59 @@ export const StreamsPage = () => {
         />
       ) : (
         <>
-          {/* 1. Mobile Cards View (Visible on Mobile Screens < 640px) */}
-          <div className="grid grid-cols-1 gap-2.5 sm:hidden">
+          {/* 1. Mobile High-Density Compact Cards (< 640px) */}
+          <div className="grid grid-cols-1 gap-1.5 sm:hidden">
             {streams.map((stm) => (
               <div
                 key={stm.id}
-                className="admin-card p-3.5 flex flex-col justify-between space-y-3"
+                className="admin-card !p-2 flex items-center justify-between gap-2 shadow-2xs hover:border-primary-200 transition-colors"
               >
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-lg bg-purple-50 border border-purple-100 flex items-center justify-center text-purple-700 font-bold text-xs shrink-0">
-                      {stm.name.charAt(0)}
-                    </div>
-                    <div>
-                      <h4 className="text-sm font-bold text-slate-900">{stm.name}</h4>
-                      <span className="text-[10px] font-mono text-slate-400">Order: #{stm.orderIndex}</span>
-                    </div>
+                {/* Left: Stream Letter Badge + Name */}
+                <div className="flex items-center gap-2 min-w-0 flex-1">
+                  <div className="w-7 h-7 rounded-lg bg-purple-50 border border-purple-100 flex items-center justify-center text-purple-700 font-bold text-xs shrink-0">
+                    {stm.name.charAt(0)}
                   </div>
-
-                  <Badge variant={stm.status === 'active' ? 'active' : 'inactive'}>
-                    {stm.status === 'active' ? 'Active' : 'Inactive'}
-                  </Badge>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-1.5">
+                      <h4 className="text-xs font-bold text-slate-900 truncate">{stm.name}</h4>
+                      <Badge variant={stm.status === 'active' ? 'active' : 'inactive'} dot size="sm">
+                        {stm.status === 'active' ? 'Active' : 'Inactive'}
+                      </Badge>
+                    </div>
+                    <span className="text-[10px] text-slate-400 font-medium block truncate">
+                      Class 11 & Class 12 • Order: #{stm.orderIndex}
+                    </span>
+                  </div>
                 </div>
 
-                <div className="pt-1">
-                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-purple-50 text-purple-700 border border-purple-200">
-                    <Layers className="w-3 h-3" />
-                    Class 11 & Class 12
-                  </span>
-                </div>
-
-                <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
+                {/* Right: Actions */}
+                <div className="flex items-center gap-0.5 shrink-0">
                   <button
                     type="button"
                     onClick={() => handleToggleStatus(stm)}
-                    className={`text-xs font-semibold flex items-center gap-1 ${
-                      stm.status === 'active' ? 'text-slate-500' : 'text-emerald-600'
+                    className={`p-1.5 rounded-md cursor-pointer ${
+                      stm.status === 'active' ? 'text-emerald-600 hover:bg-emerald-50' : 'text-slate-400 hover:bg-slate-100'
                     }`}
+                    title={stm.status === 'active' ? 'Deactivate' : 'Activate'}
                   >
-                    {stm.status === 'active' ? <XCircle className="w-3.5 h-3.5" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
-                    <span>{stm.status === 'active' ? 'Deactivate' : 'Activate'}</span>
+                    {stm.status === 'active' ? <CheckCircle2 className="w-3.5 h-3.5" /> : <XCircle className="w-3.5 h-3.5" />}
                   </button>
-
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => handleOpenEditModal(stm)}
-                      className="p-1.5 rounded-lg text-slate-500 hover:bg-slate-100 cursor-pointer"
-                      title="Edit"
-                    >
-                      <Edit2 className="w-4 h-4" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setDeleteTarget(stm)}
-                      className="p-1.5 rounded-lg text-status-error hover:bg-red-50 cursor-pointer"
-                      title="Delete"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleOpenEditModal(stm)}
+                    className="p-1.5 rounded-md text-slate-500 hover:text-primary-600 hover:bg-indigo-50 cursor-pointer"
+                    title="Edit Stream"
+                  >
+                    <Edit2 className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDeleteTarget(stm)}
+                    className="p-1.5 rounded-md text-slate-400 hover:text-status-error hover:bg-red-50 cursor-pointer"
+                    title="Delete Stream"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
                 </div>
               </div>
             ))}
