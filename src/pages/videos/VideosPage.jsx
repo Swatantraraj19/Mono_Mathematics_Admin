@@ -889,97 +889,91 @@ export const VideosPage = () => {
           ) : (
             <>
               {/* 1. Mobile High-Density Compact Cards (< 640px) */}
-              <div className="grid grid-cols-1 gap-2 sm:hidden">
+              <div className="grid grid-cols-1 gap-1.5 sm:hidden">
                 {chapterVideos.map((v) => (
                   <div
                     key={v.id}
-                    className="admin-card !p-2.5 flex flex-col justify-between space-y-2 hover:border-primary-200 transition-colors shadow-2xs"
+                    className="admin-card !p-2 flex items-center justify-between gap-2 hover:border-primary-200 transition-colors shadow-2xs"
                   >
-                    {/* Top Row: Thumbnail + Info */}
-                    <div className="flex items-start gap-2.5">
-                      <div
-                        onClick={() => setPlayingVideo(v)}
-                        className="relative w-18 h-11 rounded-lg bg-slate-900 overflow-hidden shrink-0 group cursor-pointer border border-slate-200 shadow-2xs"
-                        title="Click to preview lecture"
-                      >
-                        <img
-                          src={v.thumbnailUrl || `https://img.youtube.com/vi/${v.youtubeVideoId}/hqdefault.jpg`}
-                          alt={v.title}
-                          className="w-full h-full object-cover"
-                          loading="lazy"
-                        />
-                        <div className="absolute inset-0 bg-slate-900/30 flex items-center justify-center">
-                          <Play className="w-3.5 h-3.5 text-white fill-white" />
-                        </div>
-                        {v.duration && v.duration !== 'N/A' && (
-                          <span className="absolute bottom-0.5 right-0.5 bg-black/80 text-white text-[8px] px-1 rounded-xs font-mono">
-                            {v.duration}
-                          </span>
-                        )}
-                      </div>
-
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-1.5 mb-1">
-                          <span className="font-mono text-[10px] font-bold px-1.5 py-0.2 rounded bg-indigo-50 text-primary-700 shrink-0">
-                            L#{v.orderIndex}
-                          </span>
-                          <Badge variant={v.status === 'active' ? 'active' : 'inactive'} dot size="sm">
-                            {v.status === 'active' ? 'Active' : 'Inactive'}
-                          </Badge>
-                        </div>
-                        <h4 className="text-xs font-bold text-slate-900 leading-tight line-clamp-2">
-                          {v.title}
-                        </h4>
+                    {/* Left: Thumbnail with Click-to-play */}
+                    <div
+                      onClick={() => setPlayingVideo(v)}
+                      className="relative w-16 h-10 rounded-md bg-slate-900 overflow-hidden shrink-0 group cursor-pointer border border-slate-200 shadow-2xs"
+                      title="Click to preview lecture"
+                    >
+                      <img
+                        src={v.thumbnailUrl || `https://img.youtube.com/vi/${v.youtubeVideoId}/hqdefault.jpg`}
+                        alt={v.title}
+                        className="w-full h-full object-cover"
+                        loading="lazy"
+                      />
+                      <div className="absolute inset-0 bg-slate-900/30 flex items-center justify-center">
+                        <Play className="w-3 h-3 text-white fill-white" />
                       </div>
                     </div>
 
-                    {/* Bottom Row: Duration + 44x44px Unambiguous Action Buttons */}
-                    <div className="pt-1.5 border-t border-slate-100 flex items-center justify-between text-xs">
-                      <span className="text-[11px] text-slate-400 font-mono flex items-center gap-1">
-                        <Clock className="w-3 h-3 text-slate-400" />
-                        {v.duration && v.duration !== 'N/A' ? v.duration : 'N/A'}
-                      </span>
-
-                      <div className="flex items-center gap-1">
-                        <button
-                          type="button"
-                          onClick={() => setPlayingVideo(v)}
-                          className="min-w-[44px] min-h-[44px] w-11 h-11 flex items-center justify-center rounded-lg text-primary-600 hover:bg-primary-50 active:bg-primary-100 cursor-pointer"
-                          title="Preview / Play Lecture"
-                          aria-label="Preview lecture"
-                        >
-                          <Play className="w-4 h-4 fill-primary-600" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleToggleStatus(v)}
-                          className={`min-w-[44px] min-h-[44px] w-11 h-11 flex items-center justify-center rounded-lg cursor-pointer ${
-                            v.status === 'active' ? 'text-emerald-600 hover:bg-emerald-50 active:bg-emerald-100' : 'text-slate-400 hover:bg-slate-100 active:bg-slate-200'
-                          }`}
-                          title={v.status === 'active' ? 'Deactivate lecture' : 'Activate lecture'}
-                          aria-label={v.status === 'active' ? 'Deactivate lecture' : 'Activate lecture'}
-                        >
-                          {v.status === 'active' ? <CheckCircle2 className="w-4 h-4" /> : <XCircle className="w-4 h-4" />}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleOpenEditModal(v)}
-                          className="min-w-[44px] min-h-[44px] w-11 h-11 flex items-center justify-center rounded-lg text-slate-500 hover:text-primary-600 hover:bg-indigo-50 active:bg-indigo-100 cursor-pointer"
-                          title="Edit Lecture"
-                          aria-label="Edit lecture"
-                        >
-                          <Edit2 className="w-4 h-4" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setDeleteTarget(v)}
-                          className="min-w-[44px] min-h-[44px] w-11 h-11 flex items-center justify-center rounded-lg text-slate-400 hover:text-status-error hover:bg-red-50 active:bg-red-100 cursor-pointer"
-                          title="Delete Lecture"
-                          aria-label="Delete lecture"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                    {/* Middle: Title & Meta */}
+                    <div className="min-w-0 flex-1">
+                      <h4 className="text-xs font-bold text-slate-900 leading-tight truncate" title={v.title}>
+                        {v.title}
+                      </h4>
+                      <div className="flex items-center gap-1.5 text-[10px] text-slate-500 mt-0.5">
+                        <span className="font-mono font-bold text-primary-700 bg-indigo-50 px-1 py-0.2 rounded">
+                          #{v.orderIndex}
+                        </span>
+                        <span>•</span>
+                        <span className={v.status === 'active' ? 'text-emerald-600 font-medium' : 'text-slate-400 font-medium'}>
+                          {v.status === 'active' ? 'Active' : 'Inactive'}
+                        </span>
+                        {v.duration && v.duration !== 'N/A' && (
+                          <>
+                            <span>•</span>
+                            <span className="font-mono text-slate-400">{v.duration}</span>
+                          </>
+                        )}
                       </div>
+                    </div>
+
+                    {/* Right: Actions */}
+                    <div className="flex items-center gap-0.5 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => setPlayingVideo(v)}
+                        className="p-1.5 rounded-md text-primary-600 hover:bg-primary-50 active:bg-primary-100 cursor-pointer"
+                        title="Preview / Play Lecture"
+                        aria-label="Preview lecture"
+                      >
+                        <Play className="w-3.5 h-3.5 fill-primary-600" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleToggleStatus(v)}
+                        className={`p-1.5 rounded-md cursor-pointer ${
+                          v.status === 'active' ? 'text-emerald-600 hover:bg-emerald-50' : 'text-slate-400 hover:bg-slate-100'
+                        }`}
+                        title={v.status === 'active' ? 'Deactivate lecture' : 'Activate lecture'}
+                        aria-label={v.status === 'active' ? 'Deactivate lecture' : 'Activate lecture'}
+                      >
+                        {v.status === 'active' ? <CheckCircle2 className="w-3.5 h-3.5" /> : <XCircle className="w-3.5 h-3.5" />}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleOpenEditModal(v)}
+                        className="p-1.5 rounded-md text-slate-500 hover:text-primary-600 hover:bg-indigo-50 active:bg-indigo-100 cursor-pointer"
+                        title="Edit Lecture"
+                        aria-label="Edit lecture"
+                      >
+                        <Edit2 className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setDeleteTarget(v)}
+                        className="p-1.5 rounded-md text-slate-400 hover:text-status-error hover:bg-red-50 active:bg-red-100 cursor-pointer"
+                        title="Delete Lecture"
+                        aria-label="Delete lecture"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
                     </div>
                   </div>
                 ))}
