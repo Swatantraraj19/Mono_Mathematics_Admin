@@ -385,8 +385,8 @@ export const ChaptersPage = () => {
       </div>
 
       {/* Context-Based Academic Drilldown & Global Search Bar */}
-      <div className="admin-card p-3 sm:p-4 space-y-3">
-        <div className="flex flex-col md:flex-row items-center justify-between gap-2.5">
+      <div className="admin-card !p-2 sm:!p-4 space-y-1.5 sm:space-y-3 shadow-xs">
+        <div className="flex flex-col md:flex-row items-center justify-between gap-1.5 sm:gap-2.5">
           <div className="w-full md:w-80">
             <Input
               type="text"
@@ -394,12 +394,12 @@ export const ChaptersPage = () => {
               icon={Search}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="text-xs py-1.5"
+              className="text-xs py-1 sm:py-1.5"
             />
           </div>
 
-          <div className="flex items-center gap-2 w-full md:w-auto justify-end">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+          <div className="flex items-center gap-1.5 sm:gap-2 w-full md:w-auto justify-end">
+            <span className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-slate-400">
               Academic Context:
             </span>
             <button
@@ -408,7 +408,7 @@ export const ChaptersPage = () => {
                 loadMetadata();
                 if (selectedSubjectId) loadSubjectChapters(selectedSubjectId);
               }}
-              className="p-1.5 rounded-lg border border-slate-200 text-slate-500 hover:text-primary-600 hover:bg-slate-50 transition-colors shrink-0 cursor-pointer"
+              className="p-1 sm:p-1.5 rounded-lg border border-slate-200 text-slate-500 hover:text-primary-600 hover:bg-slate-50 transition-colors shrink-0 cursor-pointer"
               title="Refresh"
             >
               <RefreshCw className="w-3.5 h-3.5" />
@@ -417,38 +417,38 @@ export const ChaptersPage = () => {
         </div>
 
         {/* Cascade Dropdown Selectors */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-2 border-t border-slate-100">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 sm:gap-2 pt-1.5 sm:pt-2 border-t border-slate-100">
           {/* Class Selector */}
           <div>
-            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">
+            <label className="text-[9px] sm:text-[10px] font-bold text-slate-400 sm:text-slate-500 uppercase tracking-wider block mb-0.5 sm:mb-1">
               Class
             </label>
             <Select
               value={selectedClassId}
               onChange={(e) => handleClassChange(e.target.value)}
               options={classes.map((c) => ({ value: c.id, label: c.name }))}
-              className="text-xs py-1.5 bg-slate-50/50"
+              className="text-xs py-1 sm:py-1.5 bg-slate-50/50"
             />
           </div>
 
           {/* Stream Selector (Only for Senior Classes) */}
           {activeClassHasStreams && (
             <div>
-              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">
+              <label className="text-[9px] sm:text-[10px] font-bold text-slate-400 sm:text-slate-500 uppercase tracking-wider block mb-0.5 sm:mb-1">
                 Stream
               </label>
               <Select
                 value={selectedStreamId}
                 onChange={(e) => handleStreamChange(e.target.value)}
                 options={streams.map((s) => ({ value: s.id, label: s.name }))}
-                className="text-xs py-1.5 bg-purple-50/30 text-purple-900 border-purple-200"
+                className="text-xs py-1 sm:py-1.5 bg-purple-50/30 text-purple-900 border-purple-200"
               />
             </div>
           )}
 
           {/* Subject Selector */}
           <div className={activeClassHasStreams ? '' : 'col-span-1 sm:col-span-2'}>
-            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">
+            <label className="text-[9px] sm:text-[10px] font-bold text-slate-400 sm:text-slate-500 uppercase tracking-wider block mb-0.5 sm:mb-1">
               Subject
             </label>
             <Select
@@ -458,7 +458,7 @@ export const ChaptersPage = () => {
                 value: s.id,
                 label: s.subjectName,
               }))}
-              className="text-xs py-1.5 bg-blue-50/30 text-blue-900 border-blue-200 font-medium"
+              className="text-xs py-1 sm:py-1.5 bg-blue-50/30 text-blue-900 border-blue-200 font-medium"
             />
           </div>
         </div>
@@ -469,12 +469,12 @@ export const ChaptersPage = () => {
         <SkeletonLoader rows={4} />
       ) : searchQuery.trim() ? (
         /* GLOBAL SEARCH RESULTS VIEW */
-        <div className="space-y-3">
-          <div className="flex items-center justify-between px-1 text-xs text-slate-500">
+        <div className="space-y-2 sm:space-y-3">
+          <div className="flex items-center justify-between px-1 text-[11px] sm:text-xs text-slate-500">
             <span>
               Global Search Results for "<strong>{searchQuery.trim()}</strong>":
             </span>
-            <span className="font-semibold text-primary-600 bg-primary-50 px-2 py-0.5 rounded-md">
+            <span className="font-semibold text-primary-600 bg-primary-50 px-1.5 py-0.2 sm:px-2 sm:py-0.5 rounded-md text-[10px] sm:text-xs">
               {searchResults.length} matching chapter{searchResults.length !== 1 ? 's' : ''}
             </span>
           </div>
@@ -488,28 +488,28 @@ export const ChaptersPage = () => {
               description={`No chapters found matching "${searchQuery}". Try a different name.`}
             />
           ) : (
-            <div className="grid grid-cols-1 gap-2.5">
+            <div className="grid grid-cols-1 gap-1.5 sm:gap-2.5">
               {searchResults.map((ch) => (
                 <div
                   key={ch.id}
-                  className="admin-card p-3 sm:p-3.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 hover:border-primary-200 transition-colors"
+                  className="admin-card !p-2 sm:!p-3.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-3 hover:border-primary-200 transition-colors shadow-2xs"
                 >
-                  <div className="flex items-center gap-3 min-w-0">
-                    <span className="font-mono text-xs font-bold px-2 py-1 bg-amber-50 text-amber-800 border border-amber-200 rounded-md shrink-0">
+                  <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+                    <span className="font-mono text-[11px] sm:text-xs font-bold px-1.5 py-0.5 sm:px-2 sm:py-1 bg-amber-50 text-amber-800 border border-amber-200 rounded-md shrink-0">
                       #{ch.chapterNumber}
                     </span>
 
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-1.5 flex-wrap mb-1">
-                        <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-indigo-50 text-primary-700">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-1.5 flex-wrap mb-0.5">
+                        <span className="text-[9px] sm:text-[10px] font-bold px-1.5 py-0.2 rounded bg-indigo-50 text-primary-700">
                           {ch.className}
                         </span>
                         {ch.streamName && (
-                          <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-purple-50 text-purple-700">
+                          <span className="text-[9px] sm:text-[10px] font-bold px-1.5 py-0.2 rounded bg-purple-50 text-purple-700">
                             {ch.streamName}
                           </span>
                         )}
-                        <span className="text-[10px] font-medium text-slate-500">
+                        <span className="text-[9px] sm:text-[10px] font-medium text-slate-500 truncate max-w-[150px]">
                           • {ch.subjectName}
                         </span>
                       </div>
@@ -519,39 +519,39 @@ export const ChaptersPage = () => {
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between sm:justify-end gap-3 w-full sm:w-auto pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100 shrink-0">
-                    <Badge variant={ch.status === 'active' ? 'active' : 'inactive'}>
+                  <div className="flex items-center justify-between sm:justify-end gap-2 sm:gap-3 w-full sm:w-auto pt-1.5 sm:pt-0 border-t sm:border-t-0 border-slate-100 shrink-0">
+                    <Badge variant={ch.status === 'active' ? 'active' : 'inactive'} dot size="sm">
                       {ch.status === 'active' ? 'Active' : 'Inactive'}
                     </Badge>
 
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-0.5 sm:gap-1">
                       <button
                         type="button"
                         onClick={() => handleToggleStatus(ch)}
-                        className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+                        className={`p-1 sm:p-1.5 rounded-md transition-colors cursor-pointer ${
                           ch.status === 'active' ? 'text-emerald-600 hover:bg-emerald-50' : 'text-slate-400 hover:bg-slate-100'
                         }`}
                         title={ch.status === 'active' ? 'Deactivate' : 'Activate'}
                       >
-                        {ch.status === 'active' ? <CheckCircle2 className="w-4 h-4" /> : <XCircle className="w-4 h-4" />}
+                        {ch.status === 'active' ? <CheckCircle2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> : <XCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4" />}
                       </button>
 
                       <button
                         type="button"
                         onClick={() => handleOpenEditModal(ch)}
-                        className="p-1.5 rounded-lg text-slate-500 hover:text-primary-600 hover:bg-indigo-50 transition-colors cursor-pointer"
+                        className="p-1 sm:p-1.5 rounded-md text-slate-500 hover:text-primary-600 hover:bg-indigo-50 transition-colors cursor-pointer"
                         title="Edit"
                       >
-                        <Edit2 className="w-4 h-4" />
+                        <Edit2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                       </button>
 
                       <button
                         type="button"
                         onClick={() => setDeleteTarget(ch)}
-                        className="p-1.5 rounded-lg text-slate-400 hover:text-status-error hover:bg-red-50 transition-colors cursor-pointer"
+                        className="p-1 sm:p-1.5 rounded-md text-slate-400 hover:text-status-error hover:bg-red-50 transition-colors cursor-pointer"
                         title="Delete"
                       >
-                        <Trash2 className="w-4 h-4" />
+                        <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                       </button>
                     </div>
                   </div>
@@ -562,31 +562,31 @@ export const ChaptersPage = () => {
         </div>
       ) : (
         /* SUBJECT DRILLDOWN CHAPTER LIST VIEW */
-        <div className="space-y-3">
+        <div className="space-y-1.5 sm:space-y-3">
           {/* Active Context Breadcrumb Banner */}
-          <div className="bg-white rounded-xl border border-slate-200 p-3 sm:p-3.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 shadow-2xs">
-            <div className="flex items-center gap-2 flex-wrap min-w-0">
-              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-bold bg-indigo-50 text-primary-700">
-                <GraduationCap className="w-3.5 h-3.5" />
+          <div className="bg-white rounded-xl border border-slate-200 !p-2 sm:!p-3.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-1 sm:gap-2 shadow-2xs">
+            <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap min-w-0">
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-md text-[11px] sm:text-xs font-bold bg-indigo-50 text-primary-700">
+                <GraduationCap className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                 {activeClassObj?.name || 'Class'}
               </span>
 
               {activeClassHasStreams && selectedStreamId && (
-                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-bold bg-purple-50 text-purple-700">
-                  <Layers className="w-3.5 h-3.5" />
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-md text-[11px] sm:text-xs font-bold bg-purple-50 text-purple-700">
+                  <Layers className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                   {streams.find((s) => s.id === selectedStreamId)?.name || 'Stream'}
                 </span>
               )}
 
-              <ChevronRight className="w-3.5 h-3.5 text-slate-300" />
+              <ChevronRight className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-slate-300" />
 
-              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200">
-                <BookOpen className="w-3.5 h-3.5" />
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-md text-[11px] sm:text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                <BookOpen className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                 {activeSubjectObj?.subjectName || 'Subject'}
               </span>
             </div>
 
-            <div className="shrink-0 text-xs font-semibold text-slate-500">
+            <div className="shrink-0 text-[10px] sm:text-xs font-semibold text-slate-500">
               {subjectChapters.length} Chapter{subjectChapters.length !== 1 ? 's' : ''} in this subject
             </div>
           </div>
@@ -611,23 +611,23 @@ export const ChaptersPage = () => {
           ) : (
             <>
               {/* 1. Mobile Compact Rows (< 640px) */}
-              <div className="grid grid-cols-1 gap-2 sm:hidden">
+              <div className="grid grid-cols-1 gap-1 sm:hidden">
                 {subjectChapters.map((ch) => (
                   <div
                     key={ch.id}
-                    className="admin-card p-3 flex items-center justify-between gap-3"
+                    className="admin-card !p-2 flex items-center justify-between gap-2 shadow-2xs hover:border-primary-200 transition-colors"
                   >
-                    <div className="flex items-center gap-2 min-w-0">
-                      <span className="font-mono text-xs font-bold px-2 py-0.5 bg-amber-50 text-amber-800 border border-amber-200 rounded-md shrink-0">
+                    <div className="flex items-center gap-2 min-w-0 flex-1">
+                      <span className="font-mono text-[11px] font-bold px-1.5 py-0.2 bg-amber-50 text-amber-800 border border-amber-200 rounded-md shrink-0">
                         #{ch.chapterNumber}
                       </span>
-                      <h4 className="text-xs font-bold text-slate-900 truncate">
+                      <h4 className="text-xs font-bold text-slate-900 truncate" title={ch.name}>
                         {ch.name}
                       </h4>
                     </div>
 
-                    <div className="flex items-center gap-2 shrink-0">
-                      <Badge variant={ch.status === 'active' ? 'active' : 'inactive'} className="text-[9px] py-0 px-1.5">
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <Badge variant={ch.status === 'active' ? 'active' : 'inactive'} dot size="sm">
                         {ch.status === 'active' ? 'Active' : 'Inactive'}
                       </Badge>
 
@@ -635,23 +635,26 @@ export const ChaptersPage = () => {
                         <button
                           type="button"
                           onClick={() => handleToggleStatus(ch)}
-                          className={`p-1.5 rounded-md cursor-pointer ${
+                          className={`p-1 rounded-md cursor-pointer ${
                             ch.status === 'active' ? 'text-emerald-600 hover:bg-emerald-50' : 'text-slate-400 hover:bg-slate-100'
                           }`}
+                          title={ch.status === 'active' ? 'Deactivate' : 'Activate'}
                         >
                           {ch.status === 'active' ? <CheckCircle2 className="w-3.5 h-3.5" /> : <XCircle className="w-3.5 h-3.5" />}
                         </button>
                         <button
                           type="button"
                           onClick={() => handleOpenEditModal(ch)}
-                          className="p-1.5 rounded-md text-slate-500 hover:bg-slate-100 cursor-pointer"
+                          className="p-1 rounded-md text-slate-500 hover:text-primary-600 hover:bg-indigo-50 cursor-pointer"
+                          title="Edit"
                         >
                           <Edit2 className="w-3.5 h-3.5" />
                         </button>
                         <button
                           type="button"
                           onClick={() => setDeleteTarget(ch)}
-                          className="p-1.5 rounded-md text-status-error hover:bg-red-50 cursor-pointer"
+                          className="p-1 rounded-md text-slate-400 hover:text-status-error hover:bg-red-50 cursor-pointer"
+                          title="Delete"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
