@@ -50,19 +50,19 @@ export const Modal = ({
         aria-hidden="true"
       />
 
-      <div className="flex min-h-full items-center justify-center p-4 text-center sm:p-0">
+      <div className="flex min-h-full items-center justify-center p-3 text-center sm:p-0">
         <div
           role="dialog"
           aria-modal="true"
           className={cn(
-            'relative transform overflow-hidden rounded-2xl bg-white text-left shadow-2xl transition-all sm:my-8 w-full border border-slate-200',
+            'relative transform overflow-hidden rounded-2xl bg-white text-left shadow-2xl transition-all sm:my-8 w-full max-h-[92vh] flex flex-col border border-slate-200',
             maxWidth,
             className
           )}
         >
           {/* Header */}
           {(title || onClose) && (
-            <div className="flex items-start justify-between border-b border-slate-100 px-4 py-3 sm:px-5 sm:py-4">
+            <div className="flex items-start justify-between border-b border-slate-100 px-4 py-3 sm:px-5 sm:py-4 shrink-0">
               <div>
                 {title && (
                   <h3 className="text-sm sm:text-base font-bold text-slate-900 tracking-tight">
@@ -87,11 +87,11 @@ export const Modal = ({
           )}
 
           {/* Body */}
-          <div className="px-4 py-3 sm:px-5 sm:py-4">{children}</div>
+          <div className="px-4 py-3 sm:px-5 sm:py-4 overflow-y-auto flex-1">{children}</div>
 
           {/* Footer */}
           {footer && (
-            <div className="bg-slate-50/70 border-t border-slate-100 px-4 py-2.5 sm:px-5 sm:py-3 flex flex-row-reverse gap-2 rounded-b-2xl">
+            <div className="bg-slate-50/70 border-t border-slate-100 px-4 py-2.5 sm:px-5 sm:py-3 flex flex-row-reverse gap-2 rounded-b-2xl shrink-0">
               {footer}
             </div>
           )}

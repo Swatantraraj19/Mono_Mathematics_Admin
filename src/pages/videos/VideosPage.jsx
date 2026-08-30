@@ -1103,28 +1103,36 @@ export const VideosPage = () => {
         subtitle="Attach a YouTube Unlisted video lecture under a specific syllabus chapter."
         maxWidth="max-w-lg"
       >
-        <form onSubmit={handleSaveVideo} className="space-y-3.5">
-          {/* Class Selector */}
-          <Select
-            label="Academic Class"
-            value={formClassId}
-            onChange={(e) => setFormClassId(e.target.value)}
-            options={classes.map((c) => ({ value: c.id, label: c.name }))}
-            required
-          />
-
-          {/* Stream Selector (Only for Senior Classes 11 & 12) */}
-          {formClassHasStreams && (
+        <form onSubmit={handleSaveVideo} className="space-y-2.5 sm:space-y-3.5">
+          {/* Class and Stream Selectors */}
+          {formClassHasStreams ? (
+            <div className="grid grid-cols-2 gap-2.5">
+              <Select
+                label="Academic Class"
+                value={formClassId}
+                onChange={(e) => setFormClassId(e.target.value)}
+                options={classes.map((c) => ({ value: c.id, label: c.name }))}
+                required
+              />
+              <Select
+                label="Academic Stream"
+                value={formStreamId}
+                onChange={(e) => setFormStreamId(e.target.value)}
+                options={streams.map((s) => ({ value: s.id, label: s.name }))}
+                required
+              />
+            </div>
+          ) : (
             <Select
-              label="Academic Stream"
-              value={formStreamId}
-              onChange={(e) => setFormStreamId(e.target.value)}
-              options={streams.map((s) => ({ value: s.id, label: s.name }))}
+              label="Academic Class"
+              value={formClassId}
+              onChange={(e) => setFormClassId(e.target.value)}
+              options={classes.map((c) => ({ value: c.id, label: c.name }))}
               required
             />
           )}
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-2.5">
             {/* Subject Selector */}
             <Select
               label="Subject"
@@ -1134,7 +1142,7 @@ export const VideosPage = () => {
                 value: s.id,
                 label: s.subjectName,
               }))}
-              helperText={availableFormSubjects.length === 0 ? 'No subjects in this context.' : undefined}
+              helperText={availableFormSubjects.length === 0 ? 'No subjects in context.' : undefined}
               required
             />
 
@@ -1147,7 +1155,7 @@ export const VideosPage = () => {
                 value: ch.id,
                 label: `#${ch.chapterNumber} ${ch.name}`,
               }))}
-              helperText={availableFormChapters.length === 0 ? 'No chapters in this subject.' : undefined}
+              helperText={availableFormChapters.length === 0 ? 'No chapters in subject.' : undefined}
               required
             />
           </div>
@@ -1191,7 +1199,7 @@ export const VideosPage = () => {
             ) : null}
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-2.5">
             <Input
               label="Duration (optional)"
               placeholder="e.g. 45:30"
@@ -1221,7 +1229,7 @@ export const VideosPage = () => {
             ]}
           />
 
-          <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+          <div className="flex items-center justify-end gap-2 pt-2.5 sm:pt-3 border-t border-slate-100">
             <Button
               type="button"
               variant="outline"
