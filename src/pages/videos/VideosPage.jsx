@@ -1103,8 +1103,8 @@ export const VideosPage = () => {
         subtitle="Attach a YouTube Unlisted video lecture under a specific syllabus chapter."
         maxWidth="max-w-lg"
       >
-        <form onSubmit={handleSaveVideo} className="space-y-2.5 sm:space-y-3.5">
-          {/* Class and Stream Selectors */}
+        <form onSubmit={handleSaveVideo} className="space-y-2.5">
+          {/* Class and Stream / Status Selectors */}
           {formClassHasStreams ? (
             <div className="grid grid-cols-2 gap-2.5">
               <Select
@@ -1123,13 +1123,24 @@ export const VideosPage = () => {
               />
             </div>
           ) : (
-            <Select
-              label="Academic Class"
-              value={formClassId}
-              onChange={(e) => setFormClassId(e.target.value)}
-              options={classes.map((c) => ({ value: c.id, label: c.name }))}
-              required
-            />
+            <div className="grid grid-cols-2 gap-2.5">
+              <Select
+                label="Academic Class"
+                value={formClassId}
+                onChange={(e) => setFormClassId(e.target.value)}
+                options={classes.map((c) => ({ value: c.id, label: c.name }))}
+                required
+              />
+              <Select
+                label="Video Status"
+                value={formStatus}
+                onChange={(e) => setFormStatus(e.target.value)}
+                options={[
+                  { value: 'active', label: 'Active (Visible to Students)' },
+                  { value: 'inactive', label: 'Hidden from Students' },
+                ]}
+              />
+            </div>
           )}
 
           <div className="grid grid-cols-2 gap-2.5">
@@ -1168,7 +1179,7 @@ export const VideosPage = () => {
             required
           />
 
-          <div className="space-y-1.5">
+          <div className="space-y-1">
             <Input
               label="YouTube Video Link (Unlisted)"
               placeholder="e.g. https://youtu.be/dQw4w9WgXcQ or https://www.youtube.com/watch?v=..."
@@ -1179,21 +1190,21 @@ export const VideosPage = () => {
 
             {/* Live Video Preview Thumbnail */}
             {parsedFormVideoId ? (
-              <div className="p-2 rounded-lg bg-emerald-50 border border-emerald-200 flex items-center gap-3">
+              <div className="p-1.5 rounded-lg bg-emerald-50 border border-emerald-200 flex items-center gap-2.5">
                 <img
                   src={`https://img.youtube.com/vi/${parsedFormVideoId}/hqdefault.jpg`}
                   alt="YouTube Preview"
-                  className="w-16 h-10 rounded object-cover border border-emerald-300 shrink-0"
+                  className="w-14 h-9 rounded object-cover border border-emerald-300 shrink-0"
                 />
-                <div className="text-[11px] text-emerald-800 leading-tight">
+                <div className="text-[10px] text-emerald-800 leading-tight">
                   <span className="font-bold flex items-center gap-1 text-emerald-700">
-                    <CheckCircle2 className="w-3.5 h-3.5" /> Valid YouTube Video Link
+                    <CheckCircle2 className="w-3 h-3" /> Valid YouTube Video Link
                   </span>
-                  <span className="text-slate-600 font-mono text-[10px]">ID: {parsedFormVideoId}</span>
+                  <span className="text-slate-600 font-mono text-[9px]">ID: {parsedFormVideoId}</span>
                 </div>
               </div>
             ) : formVideoUrl.trim() ? (
-              <p className="text-[11px] text-status-error font-medium">
+              <p className="text-[10px] text-status-error font-medium">
                 Invalid YouTube URL format. Please paste a standard YouTube watch/share URL.
               </p>
             ) : null}
@@ -1219,17 +1230,19 @@ export const VideosPage = () => {
             />
           </div>
 
-          <Select
-            label="Video Status"
-            value={formStatus}
-            onChange={(e) => setFormStatus(e.target.value)}
-            options={[
-              { value: 'active', label: 'Active (Visible to Students)' },
-              { value: 'inactive', label: 'Hidden from Students' },
-            ]}
-          />
+          {formClassHasStreams && (
+            <Select
+              label="Video Status"
+              value={formStatus}
+              onChange={(e) => setFormStatus(e.target.value)}
+              options={[
+                { value: 'active', label: 'Active (Visible to Students)' },
+                { value: 'inactive', label: 'Hidden from Students' },
+              ]}
+            />
+          )}
 
-          <div className="flex items-center justify-end gap-2 pt-2.5 sm:pt-3 border-t border-slate-100">
+          <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
             <Button
               type="button"
               variant="outline"

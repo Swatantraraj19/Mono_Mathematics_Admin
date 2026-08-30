@@ -62,7 +62,7 @@ export const Modal = ({
         >
           {/* Header */}
           {(title || onClose) && (
-            <div className="flex items-start justify-between border-b border-slate-100 px-4 py-3 sm:px-5 sm:py-4 shrink-0">
+            <div className="flex items-start justify-between border-b border-slate-100 px-4 py-2.5 sm:px-5 sm:py-3 shrink-0">
               <div>
                 {title && (
                   <h3 className="text-sm sm:text-base font-bold text-slate-900 tracking-tight">
@@ -87,11 +87,11 @@ export const Modal = ({
           )}
 
           {/* Body */}
-          <div className="px-4 py-3 sm:px-5 sm:py-4 overflow-y-auto flex-1">{children}</div>
+          <div className="px-4 py-2.5 sm:px-5 sm:py-3 overflow-y-auto flex-1">{children}</div>
 
           {/* Footer */}
           {footer && (
-            <div className="bg-slate-50/70 border-t border-slate-100 px-4 py-2.5 sm:px-5 sm:py-3 flex flex-row-reverse gap-2 rounded-b-2xl shrink-0">
+            <div className="bg-slate-50/70 border-t border-slate-100 px-4 py-2 sm:px-5 sm:py-2.5 flex flex-row-reverse gap-2 rounded-b-2xl shrink-0">
               {footer}
             </div>
           )}
