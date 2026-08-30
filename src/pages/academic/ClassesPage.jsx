@@ -225,25 +225,25 @@ export const ClassesPage = () => {
       </div>
 
       {/* Responsive KPI Stat Cards */}
-      <div className="grid grid-cols-3 gap-2 sm:gap-4">
-        <div className="admin-card p-2.5 sm:p-4 flex flex-col justify-between">
-          <span className="text-[11px] sm:text-xs font-medium text-slate-500 truncate">Total Classes</span>
-          <div className="text-base sm:text-2xl font-bold text-slate-900 mt-0.5 sm:mt-1">{totalClasses}</div>
+      <div className="grid grid-cols-3 gap-1.5 sm:gap-4">
+        <div className="admin-card !p-2 sm:!p-4 flex flex-col justify-between">
+          <span className="text-[10px] sm:text-xs font-medium text-slate-500 truncate">Total Classes</span>
+          <div className="text-sm sm:text-2xl font-bold text-slate-900 mt-0.5 sm:mt-1">{totalClasses}</div>
         </div>
 
-        <div className="admin-card p-2.5 sm:p-4 flex flex-col justify-between">
-          <span className="text-[11px] sm:text-xs font-medium text-slate-500 truncate">Active Classes</span>
-          <div className="text-base sm:text-2xl font-bold text-emerald-600 mt-0.5 sm:mt-1">{activeClasses}</div>
+        <div className="admin-card !p-2 sm:!p-4 flex flex-col justify-between">
+          <span className="text-[10px] sm:text-xs font-medium text-slate-500 truncate">Active Classes</span>
+          <div className="text-sm sm:text-2xl font-bold text-emerald-600 mt-0.5 sm:mt-1">{activeClasses}</div>
         </div>
 
-        <div className="admin-card p-2.5 sm:p-4 flex flex-col justify-between">
-          <span className="text-[11px] sm:text-xs font-medium text-slate-500 truncate">Streams (11–12)</span>
-          <div className="text-base sm:text-2xl font-bold text-purple-600 mt-0.5 sm:mt-1">{streamEnabledClasses}</div>
+        <div className="admin-card !p-2 sm:!p-4 flex flex-col justify-between">
+          <span className="text-[10px] sm:text-xs font-medium text-slate-500 truncate">Streams (11–12)</span>
+          <div className="text-sm sm:text-2xl font-bold text-purple-600 mt-0.5 sm:mt-1">{streamEnabledClasses}</div>
         </div>
       </div>
 
       {/* Filter and Search Bar */}
-      <div className="admin-card p-3 flex flex-col sm:flex-row items-center justify-between gap-2.5">
+      <div className="admin-card !p-2 sm:!p-3 flex flex-col sm:flex-row items-center justify-between gap-1.5 sm:gap-2.5">
         <div className="w-full sm:w-72">
           <Input
             type="text"
@@ -251,11 +251,11 @@ export const ClassesPage = () => {
             icon={Search}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="text-xs py-1.5"
+            className="text-xs py-1 sm:py-1.5"
           />
         </div>
 
-        <div className="flex items-center gap-2 w-full sm:w-auto">
+        <div className="flex items-center gap-1.5 sm:gap-2 w-full sm:w-auto">
           <div className="flex-1 sm:w-44">
             <Select
               value={statusFilter}
@@ -266,17 +266,17 @@ export const ClassesPage = () => {
                 { value: 'inactive', label: 'Inactive Only' },
                 { value: 'stream', label: 'Stream Enabled (11–12)' },
               ]}
-              className="text-xs py-1.5"
+              className="text-xs py-1 sm:py-1.5"
             />
           </div>
 
           <button
             type="button"
             onClick={loadClasses}
-            className="p-2 rounded-lg border border-slate-200 text-slate-500 hover:text-primary-600 hover:bg-slate-50 transition-colors shrink-0 cursor-pointer"
+            className="p-1.5 sm:p-2 rounded-lg border border-slate-200 text-slate-500 hover:text-primary-600 hover:bg-slate-50 transition-colors shrink-0 cursor-pointer"
             title="Refresh Classes"
           >
-            <RefreshCw className="w-4 h-4" />
+            <RefreshCw className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
           </button>
         </div>
       </div>
@@ -298,72 +298,59 @@ export const ClassesPage = () => {
         />
       ) : (
         <>
-          {/* 1. Mobile Cards View (Visible on Mobile Screens < 640px) */}
-          <div className="grid grid-cols-1 gap-2.5 sm:hidden">
+          {/* 1. Mobile High-Density Compact Cards (< 640px) */}
+          <div className="grid grid-cols-1 gap-1.5 sm:hidden">
             {filteredClasses.map((cls) => (
               <div
                 key={cls.id}
-                className="admin-card p-3.5 flex flex-col justify-between space-y-3"
+                className="admin-card !p-2 flex items-center justify-between gap-2 shadow-2xs hover:border-primary-200 transition-colors"
               >
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-lg bg-indigo-50 border border-indigo-100 flex items-center justify-center text-primary-600 font-bold text-xs shrink-0">
-                      {cls.name.replace(/[^0-9]/g, '') || cls.name.charAt(0)}
-                    </div>
-                    <div>
-                      <h4 className="text-sm font-bold text-slate-900">{cls.name}</h4>
-                      <span className="text-[10px] font-mono text-slate-400">Order: #{getClassOrder(cls)}</span>
-                    </div>
+                {/* Left: Class Number Badge + Name */}
+                <div className="flex items-center gap-2 min-w-0 flex-1">
+                  <div className="w-7 h-7 rounded-lg bg-indigo-50 border border-indigo-100 flex items-center justify-center text-primary-600 font-bold text-xs shrink-0">
+                    {cls.name.replace(/[^0-9]/g, '') || cls.name.charAt(0)}
                   </div>
-
-                  <Badge variant={cls.status === 'active' ? 'active' : 'inactive'}>
-                    {cls.status === 'active' ? 'Active' : 'Inactive'}
-                  </Badge>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-1.5">
+                      <h4 className="text-xs font-bold text-slate-900 truncate">{cls.name}</h4>
+                      <Badge variant={cls.status === 'active' ? 'active' : 'inactive'} dot size="sm">
+                        {cls.status === 'active' ? 'Active' : 'Inactive'}
+                      </Badge>
+                    </div>
+                    <span className="text-[10px] text-slate-400 font-medium block truncate">
+                      {cls.hasStreams ? 'Stream-Based (11–12)' : 'Direct Subjects (6–10)'}
+                    </span>
+                  </div>
                 </div>
 
-                <div className="pt-1">
-                  {cls.hasStreams ? (
-                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-purple-50 text-purple-700 border border-purple-200">
-                      <Layers className="w-3 h-3" />
-                      Stream-Based (Science, Commerce, Arts)
-                    </span>
-                  ) : (
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-slate-100 text-slate-600">
-                      Direct Subjects (Class 6–10)
-                    </span>
-                  )}
-                </div>
-
-                <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
+                {/* Right: Actions */}
+                <div className="flex items-center gap-0.5 shrink-0">
                   <button
                     type="button"
                     onClick={() => handleToggleStatus(cls)}
-                    className={`text-xs font-semibold flex items-center gap-1 ${
-                      cls.status === 'active' ? 'text-slate-500' : 'text-emerald-600'
+                    className={`p-1.5 rounded-md cursor-pointer ${
+                      cls.status === 'active' ? 'text-emerald-600 hover:bg-emerald-50' : 'text-slate-400 hover:bg-slate-100'
                     }`}
+                    title={cls.status === 'active' ? 'Deactivate' : 'Activate'}
                   >
-                    {cls.status === 'active' ? <XCircle className="w-3.5 h-3.5" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
-                    <span>{cls.status === 'active' ? 'Deactivate' : 'Activate'}</span>
+                    {cls.status === 'active' ? <CheckCircle2 className="w-3.5 h-3.5" /> : <XCircle className="w-3.5 h-3.5" />}
                   </button>
-
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => handleOpenEditModal(cls)}
-                      className="p-1.5 rounded-lg text-slate-500 hover:bg-slate-100 cursor-pointer"
-                      title="Edit"
-                    >
-                      <Edit2 className="w-4 h-4" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setDeleteTarget(cls)}
-                      className="p-1.5 rounded-lg text-status-error hover:bg-red-50 cursor-pointer"
-                      title="Delete"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleOpenEditModal(cls)}
+                    className="p-1.5 rounded-md text-slate-500 hover:text-primary-600 hover:bg-indigo-50 cursor-pointer"
+                    title="Edit Class"
+                  >
+                    <Edit2 className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDeleteTarget(cls)}
+                    className="p-1.5 rounded-md text-slate-400 hover:text-status-error hover:bg-red-50 cursor-pointer"
+                    title="Delete Class"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
                 </div>
               </div>
             ))}
