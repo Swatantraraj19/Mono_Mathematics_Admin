@@ -514,9 +514,9 @@ export const VideosPage = () => {
       </div>
 
       {/* Academic Drill-down & Global Search Filter Panel */}
-      <div className="admin-card !p-3 sm:!p-4 space-y-3 shadow-xs">
+      <div className="admin-card !p-2.5 sm:!p-4 space-y-2 sm:space-y-3 shadow-xs">
         {/* Top Control Row: Global Search & Reload */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2">
           <div className="relative flex-1">
             <Input
               type="text"
@@ -524,18 +524,18 @@ export const VideosPage = () => {
               icon={Search}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="text-xs py-2 pr-11"
+              className="text-xs py-1.5 sm:py-2 pr-8 sm:pr-11"
               aria-label="Global Search Videos"
             />
             {searchQuery && (
               <button
                 type="button"
                 onClick={() => setSearchQuery('')}
-                className="absolute right-0 top-0 bottom-0 min-w-[44px] min-h-[44px] w-11 h-11 flex items-center justify-center text-slate-400 hover:text-slate-600 active:text-slate-800 rounded-r-lg cursor-pointer"
+                className="absolute right-0 top-0 bottom-0 min-w-[36px] sm:min-w-[44px] w-9 sm:w-11 flex items-center justify-center text-slate-400 hover:text-slate-600 active:text-slate-800 rounded-r-lg cursor-pointer"
                 title="Clear search"
                 aria-label="Clear search"
               >
-                <X className="w-4 h-4" />
+                <X className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               </button>
             )}
           </div>
@@ -546,26 +546,26 @@ export const VideosPage = () => {
               loadMetadata();
               if (selectedChapterId) loadChapterVideos(selectedChapterId);
             }}
-            className="min-w-[44px] min-h-[44px] w-11 h-11 flex items-center justify-center rounded-lg border border-slate-200 text-slate-500 hover:text-primary-600 hover:bg-slate-50 active:bg-slate-100 transition-colors shrink-0 cursor-pointer"
+            className="w-8 h-8 sm:w-10 sm:h-10 min-w-[32px] sm:min-w-[40px] flex items-center justify-center rounded-lg border border-slate-200 text-slate-500 hover:text-primary-600 hover:bg-slate-50 active:bg-slate-100 transition-colors shrink-0 cursor-pointer"
             title="Refresh academic data"
             aria-label="Refresh academic data"
           >
-            <RefreshCw className="w-4 h-4" />
+            <RefreshCw className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
           </button>
         </div>
 
         {/* Academic Hierarchy Selectors: Class -> Stream -> Subject -> Chapter */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 border-t border-slate-100">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 sm:gap-2 pt-1.5 sm:pt-2 border-t border-slate-100">
           {/* Class Selector */}
           <div>
-            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">
+            <label className="text-[9px] sm:text-[10px] font-bold text-slate-400 sm:text-slate-500 uppercase tracking-wider block mb-0.5 sm:mb-1">
               Class
             </label>
             <Select
               value={selectedClassId}
               onChange={(e) => handleClassChange(e.target.value)}
               options={classes.map((c) => ({ value: c.id, label: c.name }))}
-              className="text-xs py-2 bg-slate-50/70"
+              className="text-xs py-1 sm:py-2 bg-slate-50/70"
               aria-label="Select Class"
             />
           </div>
@@ -573,14 +573,14 @@ export const VideosPage = () => {
           {/* Stream Selector (Only for Senior Classes) */}
           {activeClassHasStreams && (
             <div>
-              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">
+              <label className="text-[9px] sm:text-[10px] font-bold text-slate-400 sm:text-slate-500 uppercase tracking-wider block mb-0.5 sm:mb-1">
                 Stream
               </label>
               <Select
                 value={selectedStreamId}
                 onChange={(e) => handleStreamChange(e.target.value)}
                 options={streams.map((s) => ({ value: s.id, label: s.name }))}
-                className="text-xs py-2 bg-purple-50/40 text-purple-900 border-purple-200"
+                className="text-xs py-1 sm:py-2 bg-purple-50/40 text-purple-900 border-purple-200"
                 aria-label="Select Stream"
               />
             </div>
@@ -588,7 +588,7 @@ export const VideosPage = () => {
 
           {/* Subject Selector */}
           <div className={!activeClassHasStreams ? 'col-span-1' : ''}>
-            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">
+            <label className="text-[9px] sm:text-[10px] font-bold text-slate-400 sm:text-slate-500 uppercase tracking-wider block mb-0.5 sm:mb-1">
               Subject
             </label>
             <Select
@@ -598,14 +598,14 @@ export const VideosPage = () => {
                 value: s.id,
                 label: s.subjectName,
               }))}
-              className="text-xs py-2 bg-slate-50/70"
+              className="text-xs py-1 sm:py-2 bg-slate-50/70"
               aria-label="Select Subject"
             />
           </div>
 
           {/* Chapter Selector */}
           <div className={!activeClassHasStreams ? 'col-span-2 sm:col-span-2' : 'col-span-1'}>
-            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">
+            <label className="text-[9px] sm:text-[10px] font-bold text-slate-400 sm:text-slate-500 uppercase tracking-wider block mb-0.5 sm:mb-1">
               Chapter
             </label>
             <Select
@@ -615,22 +615,22 @@ export const VideosPage = () => {
                 value: ch.id,
                 label: `#${ch.chapterNumber} ${ch.name}`,
               }))}
-              className="text-xs py-2 bg-indigo-50/30 text-indigo-900 border-indigo-200 font-medium"
+              className="text-xs py-1 sm:py-2 bg-indigo-50/30 text-indigo-900 border-indigo-200 font-medium"
               aria-label="Select Chapter"
             />
           </div>
         </div>
 
-        {/* Compact Result Summary Line (No duplicate breadcrumb card) */}
+        {/* Compact Result Summary Line */}
         {!metaLoading && (
-          <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 flex-wrap gap-1.5 min-h-[32px]">
+          <div className="pt-1.5 sm:pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] sm:text-xs text-slate-500 flex-wrap gap-1">
             {searchQuery.trim() ? (
               <span className="flex items-center gap-1.5">
                 <span className="w-1.5 h-1.5 rounded-full bg-primary-500"></span>
                 <span>
                   Global Search for "<strong>{searchQuery.trim()}</strong>":
                 </span>
-                <span className="font-semibold text-primary-700 bg-primary-50 px-2 py-0.5 rounded-md text-[11px]">
+                <span className="font-semibold text-primary-700 bg-primary-50 px-2 py-0.5 rounded-md text-[10px] sm:text-[11px]">
                   {searchResults.length} matching lecture{searchResults.length !== 1 ? 's' : ''}
                 </span>
               </span>
@@ -646,14 +646,14 @@ export const VideosPage = () => {
                 </span>
               </span>
             ) : (
-              <span className="text-slate-400 text-[11px]">Select a chapter above to view lectures</span>
+              <span className="text-slate-400 text-[10px] sm:text-[11px]">Select a chapter above to view lectures</span>
             )}
 
             {searchQuery.trim() && (
               <button
                 type="button"
                 onClick={() => setSearchQuery('')}
-                className="text-[11px] font-semibold text-primary-600 hover:text-primary-800 hover:underline min-h-[44px] sm:min-h-auto inline-flex items-center cursor-pointer"
+                className="text-[10px] sm:text-[11px] font-semibold text-primary-600 hover:text-primary-800 hover:underline inline-flex items-center cursor-pointer"
               >
                 Back to chapter view
               </button>
