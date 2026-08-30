@@ -14,6 +14,7 @@ export const Modal = ({
   children,
   footer,
   maxWidth = 'max-w-md',
+  closeOnBackdropClick = true,
   className = '',
 }) => {
   useEffect(() => {
@@ -45,7 +46,7 @@ export const Modal = ({
       {/* Backdrop */}
       <div
         className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs transition-opacity duration-200"
-        onClick={onClose}
+        onClick={closeOnBackdropClick ? onClose : undefined}
         aria-hidden="true"
       />
 

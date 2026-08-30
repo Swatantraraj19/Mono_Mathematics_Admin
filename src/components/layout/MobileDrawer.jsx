@@ -4,7 +4,6 @@ import { Sidebar } from './Sidebar';
 
 /**
  * Slide-out Mobile Navigation Drawer.
- * Optimized with Dynamic Viewport Height (100dvh) and safe-area insets.
  */
 export const MobileDrawer = ({ isOpen, onClose }) => {
   // Lock body scroll and handle Escape key dismiss

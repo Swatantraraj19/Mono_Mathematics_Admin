@@ -14,12 +14,19 @@ import { db } from '../config/firebase';
 const LIVE_CLASSES_COLLECTION = 'liveClasses';
 
 /**
- * Validates whether a URL is a valid Zoom or meeting URL.
+ * Validates whether a URL is a valid meeting or live streaming URL (Zoom, Google Meet, YouTube Live, Teams, etc.).
  */
 export const isValidMeetingUrl = (url) => {
   if (!url || typeof url !== 'string') return false;
   const trimmed = url.trim();
-  return /^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,6})([/\w .-]*)*\/?$/.test(trimmed);
+  if (trimmed.length < 4) return false;
+  try {
+    const formatted = trimmed.startsWith('http://') || trimmed.startsWith('https://') ? trimmed : `https://${trimmed}`;
+    const parsed = new URL(formatted);
+    return Boolean(parsed.hostname && parsed.hostname.includes('.'));
+  } catch {
+    return false;
+  }
 };
 
 /**
@@ -109,8 +116,7 @@ export const createLiveClass = async (classData, instituteId = 'mono_math_01') =
     if (!classData.subjectId) throw new Error('Subject is required.');
     if (!classData.date) throw new Error('Scheduled date is required.');
     if (!classData.startTime) throw new Error('Start time is required.');
-    if (!classData.endTime) throw new Error('End time is required.');
-    if (!classData.zoomUrl?.trim()) throw new Error('Zoom meeting URL is required.');
+    if (!classData.zoomUrl?.trim()) throw new Error('Live class / meeting URL is required.');
 
     const docData = {
       title: classData.title.trim(),
@@ -123,7 +129,7 @@ export const createLiveClass = async (classData, instituteId = 'mono_math_01') =
       classSubjectId: classData.classSubjectId,
       date: classData.date,
       startTime: classData.startTime,
-      endTime: classData.endTime,
+      endTime: classData.endTime || null,
       zoomUrl: classData.zoomUrl.trim(),
       manualStatus: 'none',
       status: 'upcoming',

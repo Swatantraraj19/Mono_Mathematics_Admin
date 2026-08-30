@@ -18,7 +18,8 @@ import { fetchTotalVideoCount } from '../../services/videoService';
 import { fetchLiveClasses } from '../../services/liveClassService';
 
 export const Dashboard = () => {
-  const { userProfile } = useAuth();
+  const { userProfile, instituteId: authInstituteId } = useAuth();
+  const currentInstituteId = authInstituteId || userProfile?.instituteId || 'mono_math_01';
   const [counts, setCounts] = useState({
     classes: 0,
     streams: 0,
@@ -33,12 +34,12 @@ export const Dashboard = () => {
     const loadCounts = async () => {
       try {
         const [classesData, streamsData, subjectsData, chaptersData, videosCount, liveClassesData] = await Promise.allSettled([
-          fetchClasses('mono_math_01'),
-          fetchStreams('mono_math_01'),
-          fetchClassSubjects('mono_math_01'),
-          fetchChapters('mono_math_01'),
-          fetchTotalVideoCount('mono_math_01'),
-          fetchLiveClasses('mono_math_01'),
+          fetchClasses(currentInstituteId),
+          fetchStreams(currentInstituteId),
+          fetchClassSubjects(currentInstituteId),
+          fetchChapters(currentInstituteId),
+          fetchTotalVideoCount(currentInstituteId),
+          fetchLiveClasses(currentInstituteId),
         ]);
 
         const totalClasses = classesData.status === 'fulfilled' ? classesData.value.length : 0;

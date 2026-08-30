@@ -7,6 +7,8 @@ import {
   deleteDoc,
   query,
   where,
+  limit,
+  getCountFromServer,
   serverTimestamp,
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
@@ -35,10 +37,17 @@ export const extractYouTubeVideoId = (url) => {
 };
 
 /**
- * Fetch videos strictly scoped to a specific chapter.
+ * Fetch videos strictly scoped to a specific chapter and institute.
+ * Uses equality filters (==) on instituteId and chapterId so Firestore
+ * automatically fulfills this without requiring a composite index.
+ * Only the specific chapter's records are transferred over the wire.
  */
-export const fetchVideosByChapter = async (instituteId = 'mono_math_01', chapterId) => {
+export const fetchVideosByChapter = async (instituteId, chapterId) => {
+  if (!instituteId) {
+    throw new Error('Institute ID is required to fetch videos.');
+  }
   if (!chapterId) return [];
+
   try {
     const q = query(
       collection(db, VIDEOS_COLLECTION),
@@ -60,57 +69,101 @@ export const fetchVideosByChapter = async (instituteId = 'mono_math_01', chapter
 export const fetchVideos = fetchVideosByChapter;
 
 /**
- * Global Search: Query videos by title for fast administrative lookup.
+ * Global Search (V1 Scoped Query):
+ * Searches videos across all chapters within the authenticated institute
+ * using a bounded Firestore range query with limit(25).
+ * NEVER downloads all 1000-1500+ videos to the client.
  */
-export const searchGlobalVideos = async (instituteId = 'mono_math_01', searchText = '') => {
-  const trimmed = searchText.trim().toLowerCase();
+export const searchGlobalVideos = async (instituteId, searchText = '', maxResults = 25) => {
+  if (!instituteId) {
+    throw new Error('Institute ID is required for video search.');
+  }
+
+  const trimmed = searchText.trim();
   if (!trimmed) return [];
 
+  const lower = trimmed.toLowerCase();
+
   try {
-    const q = query(
+    const qLower = query(
       collection(db, VIDEOS_COLLECTION),
-      where('instituteId', '==', instituteId)
+      where('instituteId', '==', instituteId),
+      where('titleLower', '>=', lower),
+      where('titleLower', '<=', lower + '\uf8ff'),
+      limit(maxResults)
     );
-    const snapshot = await getDocs(q);
-    const all = snapshot.docs.map((docSnap) => ({
+
+    const snapshot = await getDocs(qLower);
+    if (snapshot.empty) {
+      return [];
+    }
+
+    return snapshot.docs.map((docSnap) => ({
       id: docSnap.id,
       ...docSnap.data(),
     }));
-
-    return all.filter((v) => (v.title || '').toLowerCase().includes(trimmed));
   } catch (error) {
+    console.error('Firestore global search error:', error);
     throw error;
   }
 };
 
 /**
- * Fetch total video count for dashboard.
+ * Fetch total video count for dashboard using Firestore count() aggregation.
+ * Zero documents are downloaded to the client.
  */
-export const fetchTotalVideoCount = async (instituteId = 'mono_math_01') => {
+export const fetchTotalVideoCount = async (instituteId) => {
+  if (!instituteId) return 0;
   try {
     const q = query(
       collection(db, VIDEOS_COLLECTION),
       where('instituteId', '==', instituteId)
     );
-    const snapshot = await getDocs(q);
-    return snapshot.size;
+    const snapshot = await getCountFromServer(q);
+    return snapshot.data().count;
   } catch (error) {
+    console.error('fetchTotalVideoCount aggregation error:', error);
     return 0;
   }
 };
 
 /**
  * Create a new recorded video.
+ * Enforces validation of all required fields before writing to Firestore.
+ * Automatically computes and persists titleLower for high-efficiency indexed searches.
  */
-export const createVideo = async (videoData, instituteId = 'mono_math_01') => {
+export const createVideo = async (videoData, instituteId) => {
+  if (!instituteId) {
+    throw new Error('Institute ID is required to create a video lecture.');
+  }
+
+  if (!videoData.title || !videoData.title.trim()) {
+    throw new Error('Video lecture title is required.');
+  }
+
+  if (!videoData.classId) {
+    throw new Error('Class selection is required.');
+  }
+
+  if (!videoData.subjectId) {
+    throw new Error('Subject selection is required.');
+  }
+
+  if (!videoData.chapterId) {
+    throw new Error('Chapter selection is required.');
+  }
+
+  const videoId = extractYouTubeVideoId(videoData.videoUrl);
+  if (!videoId) {
+    throw new Error('Invalid YouTube URL. Please provide a valid YouTube Unlisted video link.');
+  }
+
   try {
-    const videoId = extractYouTubeVideoId(videoData.videoUrl);
-    if (!videoId) {
-      throw new Error('Invalid YouTube URL. Please provide a valid YouTube Unlisted video link.');
-    }
+    const titleTrimmed = videoData.title.trim();
 
     const docData = {
-      title: videoData.title.trim(),
+      title: titleTrimmed,
+      titleLower: titleTrimmed.toLowerCase(),
       description: (videoData.description || '').trim(),
       videoUrl: videoData.videoUrl.trim(),
       youtubeVideoId: videoId,
@@ -119,13 +172,13 @@ export const createVideo = async (videoData, instituteId = 'mono_math_01') => {
       orderIndex: Number(videoData.orderIndex) || 1,
 
       classId: videoData.classId,
-      className: videoData.className,
+      className: videoData.className || null,
       streamId: videoData.streamId || null,
       streamName: videoData.streamName || null,
       subjectId: videoData.subjectId,
-      subjectName: videoData.subjectName,
+      subjectName: videoData.subjectName || null,
       chapterId: videoData.chapterId,
-      chapterName: videoData.chapterName,
+      chapterName: videoData.chapterName || null,
 
       status: videoData.status || 'active',
       instituteId,
@@ -142,23 +195,67 @@ export const createVideo = async (videoData, instituteId = 'mono_math_01') => {
 
 /**
  * Update an existing video.
+ * Protects against mass-assignment by explicitly preventing modification of
+ * tenant ownership or system immutable fields (instituteId, uid, createdAt, id).
  */
 export const updateVideo = async (videoId, updateData) => {
+  if (!videoId) {
+    throw new Error('Video ID is required for update.');
+  }
+
   try {
     const docRef = doc(db, VIDEOS_COLLECTION, videoId);
-    const sanitizedData = {
-      ...updateData,
-      orderIndex: Number(updateData.orderIndex) || 1,
-      updatedAt: serverTimestamp(),
-    };
+    
+    // Explicitly whitelist only legitimate editable fields
+    const sanitizedData = {};
 
-    if (updateData.videoUrl) {
+    if (updateData.title !== undefined) {
+      sanitizedData.title = updateData.title.trim();
+      sanitizedData.titleLower = updateData.title.trim().toLowerCase();
+    }
+
+    if (updateData.description !== undefined) {
+      sanitizedData.description = (updateData.description || '').trim();
+    }
+
+    if (updateData.videoUrl !== undefined) {
+      sanitizedData.videoUrl = updateData.videoUrl.trim();
       const ytId = extractYouTubeVideoId(updateData.videoUrl);
       if (ytId) {
         sanitizedData.youtubeVideoId = ytId;
         sanitizedData.thumbnailUrl = `https://img.youtube.com/vi/${ytId}/hqdefault.jpg`;
       }
     }
+
+    if (updateData.duration !== undefined) {
+      sanitizedData.duration = (updateData.duration || '').trim() || 'N/A';
+    }
+
+    if (updateData.orderIndex !== undefined) {
+      sanitizedData.orderIndex = Number(updateData.orderIndex) || 1;
+    }
+
+    if (updateData.status !== undefined) {
+      sanitizedData.status = updateData.status;
+    }
+
+    // Academic Metadata updates
+    if (updateData.classId !== undefined) sanitizedData.classId = updateData.classId;
+    if (updateData.className !== undefined) sanitizedData.className = updateData.className;
+    if (updateData.streamId !== undefined) sanitizedData.streamId = updateData.streamId;
+    if (updateData.streamName !== undefined) sanitizedData.streamName = updateData.streamName;
+    if (updateData.subjectId !== undefined) sanitizedData.subjectId = updateData.subjectId;
+    if (updateData.subjectName !== undefined) sanitizedData.subjectName = updateData.subjectName;
+    if (updateData.chapterId !== undefined) sanitizedData.chapterId = updateData.chapterId;
+    if (updateData.chapterName !== undefined) sanitizedData.chapterName = updateData.chapterName;
+
+    // Strict tenant/security safeguards: explicitly strip any attempt to overwrite ownership or creation timestamp
+    delete sanitizedData.instituteId;
+    delete sanitizedData.uid;
+    delete sanitizedData.createdAt;
+    delete sanitizedData.id;
+
+    sanitizedData.updatedAt = serverTimestamp();
 
     await updateDoc(docRef, sanitizedData);
     return { id: videoId, ...sanitizedData };
@@ -179,6 +276,9 @@ export const toggleVideoStatus = async (videoId, currentStatus) => {
  * Delete a video.
  */
 export const deleteVideo = async (videoId) => {
+  if (!videoId) {
+    throw new Error('Video ID is required for deletion.');
+  }
   try {
     const docRef = doc(db, VIDEOS_COLLECTION, videoId);
     await deleteDoc(docRef);
@@ -187,3 +287,5 @@ export const deleteVideo = async (videoId) => {
     throw error;
   }
 };
+
+

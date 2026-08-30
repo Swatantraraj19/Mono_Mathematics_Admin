@@ -17,6 +17,7 @@ import {
   RefreshCw,
   AlertCircle,
   Filter,
+  Copy,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import {
@@ -53,6 +54,7 @@ export const LiveClassesPage = () => {
   const [selectedStreamFilter, setSelectedStreamFilter] = useState('all');
   const [selectedSubjectFilter, setSelectedSubjectFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
+  const [visibleCount, setVisibleCount] = useState(10);
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -66,7 +68,6 @@ export const LiveClassesPage = () => {
   const [formClassSubjectId, setFormClassSubjectId] = useState('');
   const [formDate, setFormDate] = useState('');
   const [formStartTime, setFormStartTime] = useState('17:00');
-  const [formEndTime, setFormEndTime] = useState('18:00');
   const [formZoomUrl, setFormZoomUrl] = useState('');
 
   // Cancel & Delete Modal State
@@ -141,10 +142,18 @@ export const LiveClassesPage = () => {
     activeFormClass?.name?.includes('11') ||
     activeFormClass?.name?.includes('12');
 
+  const filteredStreamsForForm = useMemo(() => {
+    return streams;
+  }, [streams]);
+
   const availableFormSubjects = useMemo(() => {
+    if (!formClassId) return [];
     return classSubjects.filter((cs) => {
-      if (cs.classId !== formClassId) return false;
-      if (formClassHasStreams && cs.streamId !== formStreamId) return false;
+      const classMatch = cs.classId === formClassId;
+      if (!classMatch) return false;
+      if (formClassHasStreams && formStreamId) {
+        return cs.streamId === formStreamId;
+      }
       return true;
     });
   }, [classSubjects, formClassId, formStreamId, formClassHasStreams]);
@@ -196,6 +205,16 @@ export const LiveClassesPage = () => {
     });
   }, [liveClasses, activeTab, selectedClassFilter, selectedStreamFilter, selectedSubjectFilter, searchTerm, filterClassHasStreams]);
 
+  // Reset pagination on tab/filter change
+  useEffect(() => {
+    setVisibleCount(10);
+  }, [activeTab, selectedClassFilter, selectedStreamFilter, selectedSubjectFilter, searchTerm]);
+
+  // Paginated/Batch Slice for rendering
+  const displayedLiveClasses = useMemo(() => {
+    return filteredLiveClasses.slice(0, visibleCount);
+  }, [filteredLiveClasses, visibleCount]);
+
   // Tab counts
   const tabCounts = useMemo(() => {
     return {
@@ -216,7 +235,6 @@ export const LiveClassesPage = () => {
     setFormStreamId(streams[0]?.id || '');
     setFormDate(getTodayDateString());
     setFormStartTime('17:00');
-    setFormEndTime('18:00');
     setFormZoomUrl('');
     setIsModalOpen(true);
   };
@@ -230,7 +248,6 @@ export const LiveClassesPage = () => {
     setFormClassSubjectId(lc.classSubjectId);
     setFormDate(lc.date);
     setFormStartTime(lc.startTime);
-    setFormEndTime(lc.endTime);
     setFormZoomUrl(lc.zoomUrl);
     setIsModalOpen(true);
   };
@@ -249,18 +266,13 @@ export const LiveClassesPage = () => {
       return;
     }
 
-    if (!formDate || !formStartTime || !formEndTime) {
-      toast.error('Please provide valid date, start time, and end time.');
-      return;
-    }
-
-    if (formStartTime >= formEndTime) {
-      toast.error('End time must be later than start time.');
+    if (!formDate || !formStartTime) {
+      toast.error('Please provide valid date and start time.');
       return;
     }
 
     if (!isValidMeetingUrl(formZoomUrl)) {
-      toast.error('Please enter a valid Zoom meeting URL.');
+      toast.error('Please enter a valid live class / meeting URL (e.g. Google Meet, Zoom, YouTube Live, etc.).');
       return;
     }
 
@@ -281,7 +293,7 @@ export const LiveClassesPage = () => {
       classSubjectId: matchedSubject.id,
       date: formDate,
       startTime: formStartTime,
-      endTime: formEndTime,
+      endTime: null,
       zoomUrl: formZoomUrl.trim(),
     };
 
@@ -335,6 +347,26 @@ export const LiveClassesPage = () => {
     }
   };
 
+  // Copy Meeting Link to Clipboard
+  const handleCopyLink = async (url) => {
+    if (!url) return;
+    try {
+      if (navigator?.clipboard?.writeText) {
+        await navigator.clipboard.writeText(url);
+      } else {
+        const textArea = document.createElement('textarea');
+        textArea.value = url;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+      }
+      toast.success('Live class link copied to clipboard!');
+    } catch {
+      toast.error('Failed to copy link.');
+    }
+  };
+
   // Format Time for Display: "17:00" -> "05:00 PM"
   const formatTimeDisplay = (timeStr) => {
     if (!timeStr) return '';
@@ -365,7 +397,7 @@ export const LiveClassesPage = () => {
             Live Classes Management
           </h2>
           <p className="text-xs text-slate-500 mt-0.5">
-            Schedule and coordinate live Zoom educational sessions for students (Asia/Kolkata IST).
+            Schedule and coordinate live educational sessions for students.
           </p>
         </div>
 
@@ -513,7 +545,7 @@ export const LiveClassesPage = () => {
         <>
           {/* 1. Mobile Cards View (< 640px) */}
           <div className="grid grid-cols-1 gap-3 sm:hidden">
-            {filteredLiveClasses.map((lc) => (
+            {displayedLiveClasses.map((lc) => (
               <div
                 key={lc.id}
                 className="admin-card p-3.5 flex flex-col justify-between space-y-3 relative overflow-hidden"
@@ -567,28 +599,39 @@ export const LiveClassesPage = () => {
                     </span>
                     <span className="flex items-center gap-1 font-mono">
                       <Clock className="w-3.5 h-3.5 text-slate-400" />
-                      {formatTimeDisplay(lc.startTime)} – {formatTimeDisplay(lc.endTime)}
+                      {formatTimeDisplay(lc.startTime)}{lc.endTime ? ` – ${formatTimeDisplay(lc.endTime)}` : ''}
                     </span>
                   </div>
                 </div>
 
                 {/* Actions Bar */}
                 <div className="pt-2.5 border-t border-slate-100 flex items-center justify-between gap-2">
-                  <a
-                    href={lc.zoomUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${
-                      lc.computedStatus === 'cancelled'
-                        ? 'bg-slate-100 text-slate-400 pointer-events-none'
-                        : lc.computedStatus === 'live'
-                        ? 'bg-rose-600 text-white hover:bg-rose-700 shadow-xs'
-                        : 'bg-primary-600 text-white hover:bg-primary-700'
-                    }`}
-                  >
-                    <Video className="w-3.5 h-3.5" />
-                    Join Zoom <ExternalLink className="w-3 h-3" />
-                  </a>
+                  <div className="flex items-center gap-1.5">
+                    <a
+                      href={lc.zoomUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${
+                        lc.computedStatus === 'cancelled'
+                          ? 'bg-slate-100 text-slate-400 pointer-events-none'
+                          : lc.computedStatus === 'live'
+                          ? 'bg-rose-600 text-white hover:bg-rose-700 shadow-xs'
+                          : 'bg-primary-600 text-white hover:bg-primary-700'
+                      }`}
+                    >
+                      <Video className="w-3.5 h-3.5" />
+                      Join <ExternalLink className="w-3 h-3" />
+                    </a>
+
+                    <button
+                      type="button"
+                      onClick={() => handleCopyLink(lc.zoomUrl)}
+                      className="p-1.5 rounded-lg border border-slate-200 text-slate-600 hover:text-primary-600 hover:bg-slate-50 transition-colors cursor-pointer"
+                      title="Copy Meeting Link"
+                    >
+                      <Copy className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
 
                   <div className="flex items-center gap-1">
                     {lc.computedStatus === 'upcoming' && (
@@ -636,7 +679,7 @@ export const LiveClassesPage = () => {
                 </Table.Row>
               </Table.Header>
               <Table.Body>
-                {filteredLiveClasses.map((lc) => (
+                {displayedLiveClasses.map((lc) => (
                   <Table.Row key={lc.id}>
                     <Table.Cell>
                       {lc.computedStatus === 'live' ? (
@@ -690,7 +733,7 @@ export const LiveClassesPage = () => {
                         </span>
                         <span className="font-mono text-slate-500 flex items-center gap-1">
                           <Clock className="w-3 h-3 text-slate-400" />
-                          {formatTimeDisplay(lc.startTime)} – {formatTimeDisplay(lc.endTime)}
+                          {formatTimeDisplay(lc.startTime)}{lc.endTime ? ` – ${formatTimeDisplay(lc.endTime)}` : ''}
                         </span>
                       </div>
                     </Table.Cell>
@@ -708,11 +751,20 @@ export const LiveClassesPage = () => {
                               ? 'bg-rose-600 text-white hover:bg-rose-700 shadow-xs'
                               : 'bg-primary-600 text-white hover:bg-primary-700'
                           }`}
-                          title="Open Zoom in new tab"
+                          title="Open live meeting in new tab"
                         >
                           <Video className="w-3.5 h-3.5" />
-                          Join Zoom
+                          Join
                         </a>
+
+                        <button
+                          type="button"
+                          onClick={() => handleCopyLink(lc.zoomUrl)}
+                          className="p-1.5 rounded-lg text-slate-400 hover:text-primary-600 hover:bg-slate-100 transition-colors cursor-pointer"
+                          title="Copy Meeting Link"
+                        >
+                          <Copy className="w-3.5 h-3.5" />
+                        </button>
 
                         {lc.computedStatus === 'upcoming' && (
                           <button
@@ -749,6 +801,31 @@ export const LiveClassesPage = () => {
               </Table.Body>
             </Table>
           </div>
+
+          {/* Batch / Load More Pagination */}
+          {filteredLiveClasses.length > visibleCount && (
+            <div className="flex flex-col items-center justify-center pt-2 pb-2 gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setVisibleCount((prev) => prev + 10)}
+                className="w-full sm:w-auto font-bold px-6 py-2 border-slate-300 hover:bg-slate-50 shadow-2xs"
+              >
+                Load More Classes (+10)
+              </Button>
+              <span className="text-xs text-slate-500 font-medium">
+                Showing {Math.min(visibleCount, filteredLiveClasses.length)} of {filteredLiveClasses.length} live sessions
+              </span>
+            </div>
+          )}
+
+          {filteredLiveClasses.length > 10 && visibleCount >= filteredLiveClasses.length && (
+            <div className="text-center pt-2 pb-1">
+              <span className="text-xs text-slate-400 font-medium">
+                Showing all {filteredLiveClasses.length} live sessions
+              </span>
+            </div>
+          )}
         </>
       )}
 
@@ -807,7 +884,7 @@ export const LiveClassesPage = () => {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {/* Date */}
             <div>
               <Input
@@ -829,27 +906,16 @@ export const LiveClassesPage = () => {
                 required
               />
             </div>
-
-            {/* End Time */}
-            <div>
-              <Input
-                label="End Time (IST)"
-                type="time"
-                value={formEndTime}
-                onChange={(e) => setFormEndTime(e.target.value)}
-                required
-              />
-            </div>
           </div>
 
-          {/* Zoom URL */}
+          {/* Meeting / Session URL */}
           <Input
-            label="Zoom Meeting Link"
-            placeholder="e.g. https://us02web.zoom.us/j/1234567890?pwd=..."
+            label="Live Class / Meeting Link"
+            placeholder="e.g. https://meet.google.com/abc-defg-hij or Zoom / YouTube Live URL"
             value={formZoomUrl}
             onChange={(e) => setFormZoomUrl(e.target.value)}
             required
-            helperText="Enter the full invite/meeting link generated in your Zoom application."
+            helperText="Enter any valid live class link (Google Meet, Zoom, YouTube Live, MS Teams, etc.)."
           />
 
           <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">

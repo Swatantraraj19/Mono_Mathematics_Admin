@@ -7,8 +7,6 @@ import { ContentSkeletonFallback } from '../common/ContentSkeletonFallback';
 
 /**
  * Master Admin Layout Shell.
- * Provides fixed 100vh Sidebar on desktop, slide drawer on mobile, and independent scrolling viewport.
- * Houses route-level Suspense so Sidebar & Header remain permanently mounted during module loading.
  */
 export const AdminLayout = () => {
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);

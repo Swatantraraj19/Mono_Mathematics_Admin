@@ -395,10 +395,7 @@ export const ClassesPage = () => {
                         <div className="w-7 h-7 rounded-lg bg-indigo-50 border border-indigo-100 flex items-center justify-center text-primary-600 font-bold text-xs shrink-0">
                           {cls.name.replace(/[^0-9]/g, '') || cls.name.charAt(0)}
                         </div>
-                        <div>
-                          <span className="text-sm font-bold text-slate-900 block">{cls.name}</span>
-                          <span className="text-[11px] text-slate-400 font-mono">{cls.slug}</span>
-                        </div>
+                        <span className="text-sm font-bold text-slate-900">{cls.name}</span>
                       </div>
                     </Table.Cell>
 

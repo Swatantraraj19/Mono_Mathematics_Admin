@@ -4,8 +4,6 @@ import { Button } from './Button';
 
 /**
  * Production-Grade Global Error Boundary.
- * Catches JavaScript errors anywhere in child component tree,
- * logs errors safely, and displays a resilient fallback recovery UI.
  */
 export class ErrorBoundary extends Component {
   constructor(props) {
