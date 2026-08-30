@@ -743,7 +743,7 @@ export const ChaptersPage = () => {
         title={editingChapter ? `Edit Chapter: ${editingChapter.name}` : 'Add New Chapter'}
         subtitle="Specify sequential chapter number and title under the subject."
       >
-        <form onSubmit={handleSaveChapter} className="space-y-4">
+        <form onSubmit={handleSaveChapter} className="space-y-3 sm:space-y-4">
           {/* Class Selector */}
           <Select
             label="Academic Class"
@@ -777,7 +777,7 @@ export const ChaptersPage = () => {
             required
           />
 
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-3 gap-2.5 sm:gap-3">
             <div className="col-span-1">
               <Input
                 label="Chapter #"
@@ -811,7 +811,7 @@ export const ChaptersPage = () => {
             ]}
           />
 
-          <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+          <div className="flex items-center justify-end gap-2 pt-2.5 sm:pt-3 border-t border-slate-100">
             <Button
               type="button"
               variant="outline"
