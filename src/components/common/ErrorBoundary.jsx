@@ -12,6 +12,7 @@ export class ErrorBoundary extends Component {
       hasError: false,
       error: null,
       errorInfo: null,
+      showDetails: false,
     };
   }
 
@@ -21,7 +22,7 @@ export class ErrorBoundary extends Component {
 
   componentDidCatch(error, errorInfo) {
     this.setState({ error, errorInfo });
-    // In production, send to error logging service (e.g. Sentry/Firebase Crashlytics)
+    console.error('Uncaught error caught by ErrorBoundary:', error, errorInfo);
   }
 
   handleReload = () => {
@@ -30,6 +31,10 @@ export class ErrorBoundary extends Component {
 
   handleGoHome = () => {
     window.location.href = '/';
+  };
+
+  toggleDetails = () => {
+    this.setState((prev) => ({ showDetails: !prev.showDetails }));
   };
 
   render() {
@@ -45,24 +50,15 @@ export class ErrorBoundary extends Component {
             {/* Error Message */}
             <div className="space-y-1.5">
               <h2 className="text-xl font-bold text-slate-900 tracking-tight">
-                Something went wrong
+                Unable to load page
               </h2>
               <p className="text-xs text-slate-500 leading-relaxed">
-                An unexpected system error occurred. We've captured the diagnostics and your data remains safe.
+                We encountered a temporary issue loading this section. Please try refreshing the page or returning to the dashboard.
               </p>
             </div>
 
-            {/* Error Details (Only if error message is present) */}
-            {this.state.error?.message && (
-              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-left overflow-x-auto">
-                <p className="text-[11px] font-mono text-slate-700 break-words line-clamp-3">
-                  {this.state.error.message}
-                </p>
-              </div>
-            )}
-
             {/* Recovery Action Buttons */}
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-2.5 pt-2">
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-2.5 pt-1">
               <Button
                 variant="primary"
                 size="sm"
@@ -82,6 +78,27 @@ export class ErrorBoundary extends Component {
                 Go to Dashboard
               </Button>
             </div>
+
+            {/* Collapsible Technical Details (For Admins/Developers) */}
+            {this.state.error?.message && (
+              <div className="pt-2 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={this.toggleDetails}
+                  className="text-[11px] font-medium text-slate-400 hover:text-slate-600 underline cursor-pointer transition-colors"
+                >
+                  {this.state.showDetails ? 'Hide technical details' : 'Show technical details'}
+                </button>
+
+                {this.state.showDetails && (
+                  <div className="mt-2 p-3 bg-slate-50 rounded-xl border border-slate-200 text-left overflow-x-auto">
+                    <p className="text-[11px] font-mono text-slate-700 break-words">
+                      {this.state.error.message}
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       );

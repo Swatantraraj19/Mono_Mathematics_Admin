@@ -29,7 +29,7 @@ export const fetchStudents = async (instituteId = 'mono_math_01') => {
     }));
 
     return list.sort((a, b) => {
-      const timeA = a.registeredAt || a0createdAt;
+      const timeA = a.registeredAt || a.createdAt;
       const timeB = b.registeredAt || b.createdAt;
       const dateA = timeA?.toDate ? timeA.toDate().getTime() : new Date(timeA || 0).getTime();
       const dateB = timeB?.toDate ? timeB.toDate().getTime() : new Date(timeB || 0).getTime();
