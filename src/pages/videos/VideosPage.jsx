@@ -1275,13 +1275,28 @@ export const VideosPage = () => {
           maxWidth="max-w-2xl"
           closeOnBackdropClick={false}
         >
-          <div className="aspect-video w-full bg-black rounded-xl overflow-hidden shadow-lg border border-slate-800">
+          <div className="relative aspect-video w-full bg-black rounded-xl overflow-hidden shadow-lg border border-slate-800 select-none">
             <iframe
-              src={`https://www.youtube.com/embed/${playingVideo.youtubeVideoId}?autoplay=1&rel=0`}
+              src={`https://www.youtube.com/embed/${playingVideo.youtubeVideoId}?autoplay=1&rel=0&modestbranding=1&iv_load_policy=3&playsinline=1`}
               title={playingVideo.title}
-              className="w-full h-full"
+              className="w-full h-full border-none"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
               allowFullScreen
+            />
+            {/* Top Left Transparent Overlay: Blocks Title & Channel Avatar, leaves top-right Settings Gear, CC, Volume clickable */}
+            <div
+              className="absolute top-0 left-0 w-[calc(100%-110px)] sm:w-[calc(100%-140px)] h-12 sm:h-16 z-20 pointer-events-auto bg-transparent cursor-default select-none"
+              onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
+              onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); }}
+              onTouchStart={(e) => { e.preventDefault(); e.stopPropagation(); }}
+            />
+            {/* Responsive Bottom Transparent Overlay: Blocks YouTube Logo & More Videos on both Mobile (38px) and Desktop (74px) */}
+            <div
+              className="absolute bottom-0 left-0 right-0 h-[38px] sm:h-[74px] z-30 pointer-events-auto bg-transparent cursor-default select-none"
+              onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
+              onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); }}
+              onTouchStart={(e) => { e.preventDefault(); e.stopPropagation(); }}
+              onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); }}
             />
           </div>
         </Modal>
