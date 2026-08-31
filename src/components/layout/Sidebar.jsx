@@ -2,6 +2,7 @@ import React from 'react';
 import { NavLink } from 'react-router-dom';
 import {
   LayoutDashboard,
+  Users,
   GraduationCap,
   Layers,
   BookOpen,
@@ -18,6 +19,7 @@ import logo from '../../assets/logo.png';
 
 export const navigationItems = [
   { name: 'Dashboard', path: '/', icon: LayoutDashboard },
+  { name: 'Students', path: '/students', icon: Users },
   { name: 'Classes', path: '/classes', icon: GraduationCap },
   { name: 'Streams', path: '/streams', icon: Layers, badge: '11-12' },
   { name: 'Subjects', path: '/subjects', icon: BookOpen },

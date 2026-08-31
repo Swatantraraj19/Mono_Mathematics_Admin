@@ -10,6 +10,7 @@ import { Loader2 } from 'lucide-react';
 // Route-Level Code Splitting (React.lazy)
 const Login = lazy(() => import('./pages/auth/Login').then((m) => ({ default: m.Login })));
 const Dashboard = lazy(() => import('./pages/dashboard/Dashboard').then((m) => ({ default: m.Dashboard })));
+const StudentsPage = lazy(() => import('./pages/students/StudentsPage').then((m) => ({ default: m.StudentsPage })));
 const ClassesPage = lazy(() => import('./pages/academic/ClassesPage').then((m) => ({ default: m.ClassesPage })));
 const StreamsPage = lazy(() => import('./pages/academic/StreamsPage').then((m) => ({ default: m.StreamsPage })));
 const SubjectsPage = lazy(() => import('./pages/academic/SubjectsPage').then((m) => ({ default: m.SubjectsPage })));
@@ -45,6 +46,7 @@ export default function App() {
             <Route element={<ProtectedRoute />}>
               <Route element={<AdminLayout />}>
                 <Route path="/" element={<Dashboard />} />
+                <Route path="/students" element={<StudentsPage />} />
                 <Route path="/classes" element={<ClassesPage />} />
                 <Route path="/streams" element={<StreamsPage />} />
                 <Route path="/subjects" element={<SubjectsPage />} />
