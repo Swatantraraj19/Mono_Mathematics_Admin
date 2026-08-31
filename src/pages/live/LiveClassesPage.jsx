@@ -608,21 +608,21 @@ export const LiveClassesPage = () => {
                 {/* Actions Bar */}
                 <div className="pt-1.5 border-t border-slate-100 flex items-center justify-between gap-1.5">
                   <div className="flex items-center gap-1">
-                    <a
-                      href={lc.zoomUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-bold transition-colors ${
-                        lc.computedStatus === 'cancelled'
-                          ? 'bg-slate-100 text-slate-400 pointer-events-none'
-                          : lc.computedStatus === 'live'
-                          ? 'bg-rose-600 text-white hover:bg-rose-700 shadow-2xs'
-                          : 'bg-primary-600 text-white hover:bg-primary-700'
-                      }`}
-                    >
-                      <Video className="w-3 h-3" />
-                      Join <ExternalLink className="w-2.5 h-2.5" />
-                    </a>
+                    {(lc.computedStatus === 'live' || lc.computedStatus === 'upcoming') && (
+                      <a
+                        href={lc.zoomUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-bold transition-colors ${
+                          lc.computedStatus === 'live'
+                            ? 'bg-rose-600 text-white hover:bg-rose-700 shadow-2xs'
+                            : 'bg-primary-600 text-white hover:bg-primary-700'
+                        }`}
+                      >
+                        <Video className="w-3 h-3" />
+                        Join <ExternalLink className="w-2.5 h-2.5" />
+                      </a>
+                    )}
 
                     <button
                       type="button"
@@ -741,22 +741,22 @@ export const LiveClassesPage = () => {
 
                     <Table.Cell className="text-right pr-6">
                       <div className="flex items-center justify-end gap-1.5">
-                        <a
-                          href={lc.zoomUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold transition-colors ${
-                            lc.computedStatus === 'cancelled'
-                              ? 'bg-slate-100 text-slate-400 pointer-events-none'
-                              : lc.computedStatus === 'live'
-                              ? 'bg-rose-600 text-white hover:bg-rose-700 shadow-xs'
-                              : 'bg-primary-600 text-white hover:bg-primary-700'
-                          }`}
-                          title="Open live meeting in new tab"
-                        >
-                          <Video className="w-3.5 h-3.5" />
-                          Join
-                        </a>
+                        {(lc.computedStatus === 'live' || lc.computedStatus === 'upcoming') && (
+                          <a
+                            href={lc.zoomUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold transition-colors ${
+                              lc.computedStatus === 'live'
+                                ? 'bg-rose-600 text-white hover:bg-rose-700 shadow-xs'
+                                : 'bg-primary-600 text-white hover:bg-primary-700'
+                            }`}
+                            title="Open live meeting in new tab"
+                          >
+                            <Video className="w-3.5 h-3.5" />
+                            Join
+                          </a>
+                        )}
 
                         <button
                           type="button"
