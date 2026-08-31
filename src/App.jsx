@@ -16,6 +16,7 @@ const SubjectsPage = lazy(() => import('./pages/academic/SubjectsPage').then((m)
 const ChaptersPage = lazy(() => import('./pages/academic/ChaptersPage').then((m) => ({ default: m.ChaptersPage })));
 const VideosPage = lazy(() => import('./pages/videos/VideosPage').then((m) => ({ default: m.VideosPage })));
 const LiveClassesPage = lazy(() => import('./pages/live/LiveClassesPage').then((m) => ({ default: m.LiveClassesPage })));
+const SettingsPage = lazy(() => import('./pages/settings/SettingsPage').then((m) => ({ default: m.SettingsPage })));
 
 // Fallback for public login chunk loading
 const AuthFallback = () => (
@@ -50,6 +51,7 @@ export default function App() {
                 <Route path="/chapters" element={<ChaptersPage />} />
                 <Route path="/videos" element={<VideosPage />} />
                 <Route path="/live-classes" element={<LiveClassesPage />} />
+                <Route path="/settings" element={<SettingsPage />} />
               </Route>
             </Route>
 

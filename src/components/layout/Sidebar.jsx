@@ -10,6 +10,7 @@ import {
   Radio,
   LogOut,
   ShieldCheck,
+  Settings,
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { cn } from '../../utils/cn';
@@ -23,6 +24,7 @@ export const navigationItems = [
   { name: 'Chapters', path: '/chapters', icon: Bookmark },
   { name: 'Recorded Videos', path: '/videos', icon: Video },
   { name: 'Live Classes', path: '/live-classes', icon: Radio },
+  { name: 'Settings', path: '/settings', icon: Settings },
 ];
 
 export const Sidebar = ({ className = '', onItemClick }) => {
