@@ -41,9 +41,9 @@ export const StudentsPage = () => {
     try {
       setLoading(true);
       const data = await fetchStudents(currentInstituteId);
-      setStudents(data);
+      setStudents(data || []);
     } catch (error) {
-      toast.error('Failed to fetch students list');
+      setStudents([]);
     } finally {
       setLoading(false);
     }

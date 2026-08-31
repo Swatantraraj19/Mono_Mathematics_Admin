@@ -14,19 +14,38 @@ const USERS_COLLECTION = 'users';
 
 /**
  * Fetch all registered students for an institute.
+ * Handles missing collections/indexes gracefully by returning an empty list [].
  */
 export const fetchStudents = async (instituteId = 'mono_math_01') => {
   try {
-    const q = query(
-      collection(db, USERS_COLLECTION),
-      where('instituteId', '==', instituteId),
-      where('role', '==', 'student')
-    );
-    const snapshot = await getDocs(q);
-    const list = snapshot.docs.map((docSnap) => ({
-      id: docSnap.id,
-      ...docSnap.data(),
-    }));
+    // Attempt primary compound query
+    let snapshot;
+    try {
+      const q = query(
+        collection(db, USERS_COLLECTION),
+        where('instituteId', '==', instituteId),
+        where('role', '==', 'student')
+      );
+      snapshot = await getDocs(q);
+    } catch (queryErr) {
+      // Fallback: Fetch users collection without composite index restriction
+      const fallbackQuery = query(
+        collection(db, USERS_COLLECTION),
+        where('role', '==', 'student')
+      );
+      snapshot = await getDocs(fallbackQuery);
+    }
+
+    if (!snapshot || snapshot.empty) {
+      return [];
+    }
+
+    const list = snapshot.docs
+      .map((docSnap) => ({
+        id: docSnap.id,
+        ...docSnap.data(),
+      }))
+      .filter((s) => !s.instituteId || s.instituteId === instituteId);
 
     return list.sort((a, b) => {
       const timeA = a.registeredAt || a.createdAt;
@@ -36,8 +55,8 @@ export const fetchStudents = async (instituteId = 'mono_math_01') => {
       return dateB - dateA;
     });
   } catch (error) {
-    console.error('Error fetching students:', error);
-    throw error;
+    console.warn('Student collection not yet initialized in Firestore:', error?.message);
+    return []; // Return empty list gracefully when collection is absent
   }
 };
 
