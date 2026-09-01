@@ -49,7 +49,7 @@ export const LiveClassesPage = () => {
   const [loading, setLoading] = useState(true);
 
   // Filter and Tabs State
-  const [activeTab, setActiveTab] = useState('all'); // 'all' | 'live' | 'upcoming' | 'completed' | 'cancelled'
+  const [activeTab, setActiveTab] = useState('upcoming'); // 'upcoming' | 'live' | 'all' | 'completed' | 'cancelled'
   const [selectedClassFilter, setSelectedClassFilter] = useState('all');
   const [selectedStreamFilter, setSelectedStreamFilter] = useState('all');
   const [selectedSubjectFilter, setSelectedSubjectFilter] = useState('all');
@@ -416,9 +416,9 @@ export const LiveClassesPage = () => {
       {/* Status Lifecycle Tabs */}
       <div className="flex items-center gap-1 overflow-x-auto pb-1 border-b border-slate-200 text-xs">
         {[
-          { id: 'all', label: 'All Sessions', count: tabCounts.all },
-          { id: 'live', label: 'Live Now', count: tabCounts.live, isLive: true },
           { id: 'upcoming', label: 'Upcoming', count: tabCounts.upcoming },
+          { id: 'live', label: 'Live Now', count: tabCounts.live, isLive: true },
+          { id: 'all', label: 'All Sessions', count: tabCounts.all },
           { id: 'completed', label: 'Completed', count: tabCounts.completed },
           { id: 'cancelled', label: 'Cancelled', count: tabCounts.cancelled },
         ].map((tab) => (
