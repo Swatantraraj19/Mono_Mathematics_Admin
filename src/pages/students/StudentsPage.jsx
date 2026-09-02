@@ -560,8 +560,8 @@ export const StudentsPage = () => {
         onClose={() => setDeleteId(null)}
         onConfirm={handleDelete}
         title="Delete Student Record"
-        message="Are you sure you want to delete this student record? This action cannot be undone."
-        confirmText="Delete Student"
+        message="Are you sure you want to permanently delete this student document? (Tip: To temporarily suspend a student without losing history, use 'Deactivate' instead)."
+        confirmText="Delete Document"
         isLoading={isDeleting}
       />
     </div>
