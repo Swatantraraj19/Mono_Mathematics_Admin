@@ -85,12 +85,14 @@ export const StudentsPage = () => {
     if (!deleteId) return;
     try {
       setIsDeleting(true);
-      await deleteStudent(deleteId);
-      toast.success('Student record deleted successfully');
-      setStudents((prev) => prev.filter((s) => s.id !== deleteId));
+      await updateStudentStatus(deleteId, 'inactive');
+      toast.success('Student account deactivated successfully');
+      setStudents((prev) =>
+        prev.map((s) => (s.id === deleteId ? { ...s, status: 'inactive' } : s))
+      );
       setDeleteId(null);
     } catch (error) {
-      toast.error('Failed to delete student');
+      toast.error('Failed to deactivate student');
     } finally {
       setIsDeleting(false);
     }
@@ -249,10 +251,10 @@ export const StudentsPage = () => {
               variant="ghost"
               size="sm"
               onClick={() => setDeleteId(student.id)}
-              className="text-red-500 hover:bg-red-50 py-1 px-2 text-xs"
-              title="Delete Student Record"
+              className="text-amber-600 hover:bg-amber-50 py-1 px-2 text-xs"
+              title="Deactivate Student"
             >
-              <Trash2 className="w-3.5 h-3.5" />
+              <UserX className="w-3.5 h-3.5" />
             </Button>
           </div>
         );
@@ -480,10 +482,10 @@ export const StudentsPage = () => {
                         <button
                           type="button"
                           onClick={() => setDeleteId(student.id)}
-                          className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors cursor-pointer"
-                          title="Delete Student"
+                          className="p-1.5 rounded-lg text-slate-400 hover:text-amber-600 hover:bg-amber-50 transition-colors cursor-pointer"
+                          title="Deactivate Student"
                         >
-                          <Trash2 className="w-3.5 h-3.5" />
+                          <UserX className="w-3.5 h-3.5" />
                         </button>
                       </div>
                     </div>
@@ -554,14 +556,14 @@ export const StudentsPage = () => {
         )}
       </div>
 
-      {/* Confirm Delete Dialog */}
+      {/* Confirm Deactivate Dialog */}
       <ConfirmDialog
         isOpen={!!deleteId}
         onClose={() => setDeleteId(null)}
         onConfirm={handleDelete}
-        title="Delete Student Record"
-        message="Are you sure you want to permanently delete this student document? (Tip: To temporarily suspend a student without losing history, use 'Deactivate' instead)."
-        confirmText="Delete Document"
+        title="Deactivate Student"
+        message="Are you sure you want to deactivate this student? Their access will be suspended, and you can reactivate them anytime."
+        confirmText="Deactivate Student"
         isLoading={isDeleting}
       />
     </div>
