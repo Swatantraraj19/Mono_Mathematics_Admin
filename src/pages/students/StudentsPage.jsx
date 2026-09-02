@@ -205,20 +205,33 @@ export const StudentsPage = () => {
         return (
           <div className="flex items-center gap-1.5 justify-end">
             {isPending && (
-              <Button
-                type="button"
-                variant="primary"
-                size="sm"
-                isLoading={updatingId === student.id}
-                onClick={() => handleStatusChange(student.id, 'active')}
-                icon={CheckCircle2}
-                className="py-1 px-2.5 text-xs bg-emerald-600 hover:bg-emerald-700"
-              >
-                Approve
-              </Button>
+              <>
+                <Button
+                  type="button"
+                  variant="primary"
+                  size="sm"
+                  isLoading={updatingId === student.id}
+                  onClick={() => handleStatusChange(student.id, 'active')}
+                  icon={CheckCircle2}
+                  className="py-1 px-2.5 text-xs bg-emerald-600 hover:bg-emerald-700"
+                >
+                  Approve
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  disabled={updatingId === student.id}
+                  onClick={() => handleStatusChange(student.id, 'inactive')}
+                  className="text-amber-600 hover:bg-amber-50 py-1 px-2 text-xs"
+                  title="Reject / Deactivate Student"
+                >
+                  <UserX className="w-3.5 h-3.5" />
+                </Button>
+              </>
             )}
 
-            {isActive ? (
+            {isActive && (
               <Button
                 type="button"
                 variant="ghost"
@@ -230,20 +243,20 @@ export const StudentsPage = () => {
               >
                 <UserX className="w-3.5 h-3.5" />
               </Button>
-            ) : (
-              !isPending && (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  disabled={updatingId === student.id}
-                  onClick={() => handleStatusChange(student.id, 'active')}
-                  className="text-emerald-600 hover:bg-emerald-50 py-1 px-2 text-xs"
-                  title="Activate Student"
-                >
-                  <CheckCircle2 className="w-3.5 h-3.5" />
-                </Button>
-              )
+            )}
+
+            {!isPending && !isActive && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                disabled={updatingId === student.id}
+                onClick={() => handleStatusChange(student.id, 'active')}
+                className="text-emerald-600 hover:bg-emerald-50 py-1 px-2 text-xs"
+                title="Activate Student"
+              >
+                <CheckCircle2 className="w-3.5 h-3.5" />
+              </Button>
             )}
           </div>
         );
@@ -433,15 +446,26 @@ export const StudentsPage = () => {
                       {/* Right: Actions */}
                       <div className="flex items-center gap-1 shrink-0 pt-0.5">
                         {isPending && (
-                          <button
-                            type="button"
-                            disabled={updatingId === student.id}
-                            onClick={() => handleStatusChange(student.id, 'active')}
-                            className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-bold rounded-lg bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white shadow-2xs transition-colors cursor-pointer disabled:opacity-50"
-                          >
-                            <CheckCircle2 className="w-3 h-3" />
-                            <span>Approve</span>
-                          </button>
+                          <>
+                            <button
+                              type="button"
+                              disabled={updatingId === student.id}
+                              onClick={() => handleStatusChange(student.id, 'active')}
+                              className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-bold rounded-lg bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white shadow-2xs transition-colors cursor-pointer disabled:opacity-50"
+                            >
+                              <CheckCircle2 className="w-3 h-3" />
+                              <span>Approve</span>
+                            </button>
+                            <button
+                              type="button"
+                              disabled={updatingId === student.id}
+                              onClick={() => handleStatusChange(student.id, 'inactive')}
+                              className="p-1 rounded-lg text-slate-400 hover:text-amber-600 hover:bg-amber-50 transition-colors cursor-pointer"
+                              title="Reject / Deactivate Student"
+                            >
+                              <UserX className="w-3.5 h-3.5" />
+                            </button>
+                          </>
                         )}
 
                         {isActive ? (
