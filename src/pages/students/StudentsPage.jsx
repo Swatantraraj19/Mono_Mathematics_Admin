@@ -245,17 +245,6 @@ export const StudentsPage = () => {
                 </Button>
               )
             )}
-
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={() => setDeleteId(student.id)}
-              className="text-amber-600 hover:bg-amber-50 py-1 px-2 text-xs"
-              title="Deactivate Student"
-            >
-              <UserX className="w-3.5 h-3.5" />
-            </Button>
           </div>
         );
       },
@@ -478,15 +467,6 @@ export const StudentsPage = () => {
                             </button>
                           )
                         )}
-
-                        <button
-                          type="button"
-                          onClick={() => setDeleteId(student.id)}
-                          className="p-1.5 rounded-lg text-slate-400 hover:text-amber-600 hover:bg-amber-50 transition-colors cursor-pointer"
-                          title="Deactivate Student"
-                        >
-                          <UserX className="w-3.5 h-3.5" />
-                        </button>
                       </div>
                     </div>
 
