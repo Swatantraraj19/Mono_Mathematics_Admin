@@ -8,6 +8,7 @@ import { cn } from '../../utils/cn';
  */
 export const Table = ({
   columns = [],
+  data = [],
   children,
   isLoading = false,
   isEmpty = false,
@@ -65,6 +66,23 @@ export const Table = ({
                   />
                 </td>
               </tr>
+            ) : data && data.length > 0 ? (
+              data.map((row, rowIdx) => (
+                <tr key={row.id || rowIdx} className="hover:bg-slate-50/80 transition-colors">
+                  {columns.map((col, colIdx) => (
+                    <td
+                      key={colIdx}
+                      className={cn(
+                        'px-4 py-3.5 text-xs sm:text-sm text-slate-700 align-middle',
+                        col.align === 'right' ? 'text-right' : col.align === 'center' ? 'text-center' : 'text-left',
+                        col.className
+                      )}
+                    >
+                      {col.cell ? col.cell(row) : row[col.accessorKey]}
+                    </td>
+                  ))}
+                </tr>
+              ))
             ) : (
               children
             )}

@@ -33,7 +33,7 @@ export const StudentsPage = () => {
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all'); // 'all' | 'active' | 'pending' | 'inactive'
+  const [statusFilter, setStatusFilter] = useState('pending'); // 'pending' by default for instant admin approvals
   const [currentPage, setCurrentPage] = useState(1);
 
   // Modal / Action states
