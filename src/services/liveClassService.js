@@ -37,6 +37,10 @@ export const computeLiveClassStatus = (liveClass) => {
     return 'cancelled';
   }
 
+  if (liveClass.manualStatus === 'completed' || liveClass.status === 'completed') {
+    return 'completed';
+  }
+
   if (!liveClass.date || !liveClass.startTime) {
     return liveClass.status || 'upcoming';
   }
@@ -46,10 +50,11 @@ export const computeLiveClassStatus = (liveClass) => {
     const [startHours, startMinutes] = (liveClass.startTime || '00:00').split(':').map(Number);
     const startDateTime = new Date(`${liveClass.date}T${String(startHours).padStart(2, '0')}:${String(startMinutes).padStart(2, '0')}:00`);
 
+    const effectiveEndDate = liveClass.endDate || liveClass.date;
     let endDateTime;
     if (liveClass.endTime) {
       const [endHours, endMinutes] = liveClass.endTime.split(':').map(Number);
-      endDateTime = new Date(`${liveClass.date}T${String(endHours).padStart(2, '0')}:${String(endMinutes).padStart(2, '0')}:00`);
+      endDateTime = new Date(`${effectiveEndDate}T${String(endHours).padStart(2, '0')}:${String(endMinutes).padStart(2, '0')}:00`);
     } else {
       endDateTime = new Date(startDateTime.getTime() + 60 * 60 * 1000);
     }
@@ -116,6 +121,7 @@ export const createLiveClass = async (classData, instituteId = 'mono_math_01') =
     if (!classData.subjectId) throw new Error('Subject is required.');
     if (!classData.date) throw new Error('Scheduled date is required.');
     if (!classData.startTime) throw new Error('Start time is required.');
+    if (!classData.endTime) throw new Error('End time is required.');
     if (!classData.zoomUrl?.trim()) throw new Error('Live class / meeting URL is required.');
 
     const docData = {
@@ -129,7 +135,8 @@ export const createLiveClass = async (classData, instituteId = 'mono_math_01') =
       classSubjectId: classData.classSubjectId,
       date: classData.date,
       startTime: classData.startTime,
-      endTime: classData.endTime || null,
+      endDate: classData.endDate || classData.date,
+      endTime: classData.endTime,
       zoomUrl: classData.zoomUrl.trim(),
       manualStatus: 'none',
       status: 'upcoming',

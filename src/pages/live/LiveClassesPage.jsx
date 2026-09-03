@@ -68,6 +68,8 @@ export const LiveClassesPage = () => {
   const [formClassSubjectId, setFormClassSubjectId] = useState('');
   const [formDate, setFormDate] = useState('');
   const [formStartTime, setFormStartTime] = useState('17:00');
+  const [formEndDate, setFormEndDate] = useState('');
+  const [formEndTime, setFormEndTime] = useState('18:00');
   const [formZoomUrl, setFormZoomUrl] = useState('');
 
   // Cancel & Delete Modal State
@@ -233,8 +235,11 @@ export const LiveClassesPage = () => {
     const initialClassId = classes[0]?.id || '';
     setFormClassId(initialClassId);
     setFormStreamId(streams[0]?.id || '');
-    setFormDate(getTodayDateString());
+    const today = getTodayDateString();
+    setFormDate(today);
+    setFormEndDate(today);
     setFormStartTime('17:00');
+    setFormEndTime('18:00');
     setFormZoomUrl('');
     setIsModalOpen(true);
   };
@@ -247,7 +252,9 @@ export const LiveClassesPage = () => {
     setFormStreamId(lc.streamId || '');
     setFormClassSubjectId(lc.classSubjectId);
     setFormDate(lc.date);
+    setFormEndDate(lc.endDate || lc.date);
     setFormStartTime(lc.startTime);
+    setFormEndTime(lc.endTime || '18:00');
     setFormZoomUrl(lc.zoomUrl);
     setIsModalOpen(true);
   };
@@ -267,7 +274,20 @@ export const LiveClassesPage = () => {
     }
 
     if (!formDate || !formStartTime) {
-      toast.error('Please provide valid date and start time.');
+      toast.error('Please provide valid start date and start time.');
+      return;
+    }
+
+    if (!formEndDate || !formEndTime) {
+      toast.error('Please provide valid end date and end time.');
+      return;
+    }
+
+    const startDateTimeObj = new Date(`${formDate}T${formStartTime}:00`);
+    const endDateTimeObj = new Date(`${formEndDate}T${formEndTime}:00`);
+
+    if (endDateTimeObj <= startDateTimeObj) {
+      toast.error('Session end date & time must be strictly after start date & time.');
       return;
     }
 
@@ -293,7 +313,8 @@ export const LiveClassesPage = () => {
       classSubjectId: matchedSubject.id,
       date: formDate,
       startTime: formStartTime,
-      endTime: null,
+      endDate: formEndDate,
+      endTime: formEndTime,
       zoomUrl: formZoomUrl.trim(),
     };
 
@@ -596,7 +617,7 @@ export const LiveClassesPage = () => {
                   <div className="flex items-center gap-2 text-[11px] text-slate-500 mt-0.5">
                     <span className="flex items-center gap-1 font-mono">
                       <Calendar className="w-3 h-3 text-slate-400" />
-                      {formatDateDisplay(lc.date)}
+                      {formatDateDisplay(lc.date)}{lc.endDate && lc.endDate !== lc.date ? ` – ${formatDateDisplay(lc.endDate)}` : ''}
                     </span>
                     <span className="flex items-center gap-1 font-mono">
                       <Clock className="w-3 h-3 text-slate-400" />
@@ -730,7 +751,7 @@ export const LiveClassesPage = () => {
                       <div className="space-y-0.5 text-xs">
                         <span className="font-mono text-slate-800 font-semibold flex items-center gap-1">
                           <Calendar className="w-3 h-3 text-slate-400" />
-                          {formatDateDisplay(lc.date)}
+                          {formatDateDisplay(lc.date)}{lc.endDate && lc.endDate !== lc.date ? ` – ${formatDateDisplay(lc.endDate)}` : ''}
                         </span>
                         <span className="font-mono text-slate-500 flex items-center gap-1">
                           <Clock className="w-3 h-3 text-slate-400" />
@@ -899,13 +920,19 @@ export const LiveClassesPage = () => {
           )}
 
           <div className="grid grid-cols-2 gap-2.5">
-            {/* Date */}
+            {/* Start Date */}
             <div>
               <Input
-                label="Session Date"
+                label="Start Date"
                 type="date"
                 value={formDate}
-                onChange={(e) => setFormDate(e.target.value)}
+                onChange={(e) => {
+                  const newDate = e.target.value;
+                  if (!formEndDate || formEndDate === formDate) {
+                    setFormEndDate(newDate);
+                  }
+                  setFormDate(newDate);
+                }}
                 required
               />
             </div>
@@ -917,6 +944,30 @@ export const LiveClassesPage = () => {
                 type="time"
                 value={formStartTime}
                 onChange={(e) => setFormStartTime(e.target.value)}
+                required
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2.5">
+            {/* End Date */}
+            <div>
+              <Input
+                label="End Date"
+                type="date"
+                value={formEndDate}
+                onChange={(e) => setFormEndDate(e.target.value)}
+                required
+              />
+            </div>
+
+            {/* End Time */}
+            <div>
+              <Input
+                label="End Time (IST)"
+                type="time"
+                value={formEndTime}
+                onChange={(e) => setFormEndTime(e.target.value)}
                 required
               />
             </div>
