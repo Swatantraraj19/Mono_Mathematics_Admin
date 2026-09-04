@@ -444,8 +444,8 @@ export const LiveClassesPage = () => {
       <div className="flex items-center gap-1 overflow-x-auto pb-1 border-b border-slate-200 text-xs">
         {[
           { id: 'upcoming', label: 'Upcoming', count: tabCounts.upcoming, isLive: tabCounts.hasLive },
-          { id: 'all', label: 'All Sessions', count: tabCounts.all },
           { id: 'completed', label: 'Completed', count: tabCounts.completed },
+          { id: 'all', label: 'All Sessions', count: tabCounts.all },
           { id: 'cancelled', label: 'Cancelled', count: tabCounts.cancelled },
         ].map((tab) => (
           <button
