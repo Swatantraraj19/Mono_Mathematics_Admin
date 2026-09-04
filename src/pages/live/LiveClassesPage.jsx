@@ -175,8 +175,12 @@ export const LiveClassesPage = () => {
     const trimmedSearch = searchTerm.trim().toLowerCase();
 
     return liveClasses.filter((lc) => {
-      // 1. Status Tab Filter
-      if (activeTab !== 'all' && lc.computedStatus !== activeTab) {
+      // 1. Status Tab Filter (Upcoming tab includes both upcoming and active live sessions)
+      if (activeTab === 'upcoming') {
+        if (lc.computedStatus !== 'upcoming' && lc.computedStatus !== 'live') {
+          return false;
+        }
+      } else if (activeTab !== 'all' && lc.computedStatus !== activeTab) {
         return false;
       }
 
@@ -219,10 +223,12 @@ export const LiveClassesPage = () => {
 
   // Tab counts
   const tabCounts = useMemo(() => {
+    const liveCount = liveClasses.filter((lc) => lc.computedStatus === 'live').length;
+    const upcomingCount = liveClasses.filter((lc) => lc.computedStatus === 'upcoming' || lc.computedStatus === 'live').length;
     return {
       all: liveClasses.length,
-      live: liveClasses.filter((lc) => lc.computedStatus === 'live').length,
-      upcoming: liveClasses.filter((lc) => lc.computedStatus === 'upcoming').length,
+      upcoming: upcomingCount,
+      hasLive: liveCount > 0,
       completed: liveClasses.filter((lc) => lc.computedStatus === 'completed').length,
       cancelled: liveClasses.filter((lc) => lc.computedStatus === 'cancelled').length,
     };
@@ -437,8 +443,7 @@ export const LiveClassesPage = () => {
       {/* Status Lifecycle Tabs */}
       <div className="flex items-center gap-1 overflow-x-auto pb-1 border-b border-slate-200 text-xs">
         {[
-          { id: 'upcoming', label: 'Upcoming', count: tabCounts.upcoming },
-          { id: 'live', label: 'Live Now', count: tabCounts.live, isLive: true },
+          { id: 'upcoming', label: 'Upcoming', count: tabCounts.upcoming, isLive: tabCounts.hasLive },
           { id: 'all', label: 'All Sessions', count: tabCounts.all },
           { id: 'completed', label: 'Completed', count: tabCounts.completed },
           { id: 'cancelled', label: 'Cancelled', count: tabCounts.cancelled },
