@@ -93,7 +93,7 @@ export const SettingsPage = () => {
 
       {/* Main Settings Card */}
       <form onSubmit={handleSave} className="bg-white rounded-xl border border-slate-200 p-5 sm:p-6 shadow-xs space-y-6">
-        <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 border-b border-slate-100 pb-4">
           <div>
             <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2">
               <Lock className="w-4 h-4 text-primary-600" />
@@ -104,7 +104,11 @@ export const SettingsPage = () => {
             </p>
           </div>
 
-          <Badge variant={accessMode === 'open' ? 'success' : 'warning'} size="sm">
+          <Badge
+            variant={accessMode === 'open' ? 'active' : 'scheduled'}
+            size="sm"
+            className="w-fit shrink-0 whitespace-nowrap self-start sm:self-auto"
+          >
             Current: {accessMode === 'open' ? 'Open Access' : 'Approval Required'}
           </Badge>
         </div>
