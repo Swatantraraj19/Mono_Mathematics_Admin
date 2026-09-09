@@ -1358,10 +1358,10 @@ export const VideosPage = () => {
               </button>
             )}
 
-            {/* Dynamic State-Aware Bottom Overlay: Auto-calibrates height for Mobile Normal (30px), Mobile Fullscreen (42px), Desktop Normal (52px), and Desktop Fullscreen (64px) */}
+            {/* Dynamic State-Aware Bottom Overlay: Auto-calibrates height for Mobile Normal (45px), Large Phone/Phablet (54px), Desktop (64px), and Fullscreen (58px/64px) */}
             <div
               className={`absolute bottom-0 left-0 right-0 z-30 pointer-events-auto bg-transparent cursor-default select-none ${
-                isFullscreen ? 'h-[58px] sm:h-[64px]' : 'h-[45px] sm:h-[64px]'
+                isFullscreen ? 'h-[58px] sm:h-[64px]' : 'h-[45px] min-[450px]:h-[59px] sm:h-[64px]'
               }`}
               onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
               onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); }}
