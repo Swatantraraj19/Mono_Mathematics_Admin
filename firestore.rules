@@ -101,6 +101,8 @@ service cloud.firestore {
             "displayName",
             "photoURL",
             "phone",
+            "board",
+            "boardName",
             "classId",
             "className",
             "streamId",

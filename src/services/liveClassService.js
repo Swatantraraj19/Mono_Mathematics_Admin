@@ -87,6 +87,7 @@ export const fetchLiveClasses = async (instituteId = 'mono_math_01') => {
       return {
         id: docSnap.id,
         ...data,
+        board: data.board || 'ALL',
         computedStatus: currentStatus,
       };
     });
@@ -133,6 +134,7 @@ export const createLiveClass = async (classData, instituteId = 'mono_math_01') =
       subjectId: classData.subjectId,
       subjectName: classData.subjectName,
       classSubjectId: classData.classSubjectId,
+      board: classData.board || 'ALL',
       date: classData.date,
       startTime: classData.startTime,
       endDate: classData.endDate || classData.date,

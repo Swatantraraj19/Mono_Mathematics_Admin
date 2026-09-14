@@ -50,6 +50,7 @@ export const LiveClassesPage = () => {
 
   // Filter and Tabs State
   const [activeTab, setActiveTab] = useState('upcoming'); // 'upcoming' | 'live' | 'all' | 'completed' | 'cancelled'
+  const [selectedBoardFilter, setSelectedBoardFilter] = useState('all'); // 'all' | 'CBSE' | 'BSEB'
   const [selectedClassFilter, setSelectedClassFilter] = useState('all');
   const [selectedStreamFilter, setSelectedStreamFilter] = useState('all');
   const [selectedSubjectFilter, setSelectedSubjectFilter] = useState('all');
@@ -66,6 +67,7 @@ export const LiveClassesPage = () => {
   const [formClassId, setFormClassId] = useState('');
   const [formStreamId, setFormStreamId] = useState('');
   const [formClassSubjectId, setFormClassSubjectId] = useState('');
+  const [formBoard, setFormBoard] = useState('ALL'); // 'ALL' | 'CBSE' | 'BSEB'
   const [formDate, setFormDate] = useState('');
   const [formStartTime, setFormStartTime] = useState('17:00');
   const [formEndDate, setFormEndDate] = useState('');
@@ -170,6 +172,46 @@ export const LiveClassesPage = () => {
     }
   }, [availableFormSubjects, formClassSubjectId]);
 
+  // Auto-sync formBoard with selected subject's board on create
+  useEffect(() => {
+    if (formClassSubjectId && !editingLiveClass) {
+      const sub = classSubjects.find((s) => s.id === formClassSubjectId);
+      if (sub) {
+        setFormBoard(sub.board || 'ALL');
+      }
+    }
+  }, [formClassSubjectId, classSubjects, editingLiveClass]);
+
+  // Helper for board badge styling
+  const renderBoardBadge = (board) => {
+    const b = board || 'ALL';
+    if (b === 'CBSE') {
+      return (
+        <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-blue-50 text-blue-700 border border-blue-200 shrink-0">
+          CBSE
+        </span>
+      );
+    }
+    if (b === 'BSEB') {
+      return (
+        <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-amber-50 text-amber-700 border border-amber-200 shrink-0">
+          BSEB
+        </span>
+      );
+    }
+    return (
+      <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 shrink-0">
+        All Boards
+      </span>
+    );
+  };
+
+  const formatSubjectOptionLabel = (s) => {
+    const b = s.board || 'ALL';
+    const bLabel = b === 'CBSE' ? 'CBSE' : b === 'BSEB' ? 'BSEB' : 'All Boards';
+    return `${s.subjectName} (${bLabel})`;
+  };
+
   // Computed Filtered List
   const filteredLiveClasses = useMemo(() => {
     const trimmedSearch = searchTerm.trim().toLowerCase();
@@ -199,7 +241,13 @@ export const LiveClassesPage = () => {
         return false;
       }
 
-      // 5. Search Filter
+      // 5. Board Filter
+      if (selectedBoardFilter !== 'all') {
+        const b = lc.board || 'ALL';
+        if (b !== 'ALL' && b !== selectedBoardFilter) return false;
+      }
+
+      // 6. Search Filter
       if (trimmedSearch) {
         const titleMatch = (lc.title || '').toLowerCase().includes(trimmedSearch);
         const subjectMatch = (lc.subjectName || '').toLowerCase().includes(trimmedSearch);
@@ -209,12 +257,12 @@ export const LiveClassesPage = () => {
 
       return true;
     });
-  }, [liveClasses, activeTab, selectedClassFilter, selectedStreamFilter, selectedSubjectFilter, searchTerm, filterClassHasStreams]);
+  }, [liveClasses, activeTab, selectedBoardFilter, selectedClassFilter, selectedStreamFilter, selectedSubjectFilter, searchTerm, filterClassHasStreams]);
 
   // Reset pagination on tab/filter change
   useEffect(() => {
     setVisibleCount(10);
-  }, [activeTab, selectedClassFilter, selectedStreamFilter, selectedSubjectFilter, searchTerm]);
+  }, [activeTab, selectedBoardFilter, selectedClassFilter, selectedStreamFilter, selectedSubjectFilter, searchTerm]);
 
   // Paginated/Batch Slice for rendering
   const displayedLiveClasses = useMemo(() => {
@@ -241,6 +289,7 @@ export const LiveClassesPage = () => {
     const initialClassId = classes[0]?.id || '';
     setFormClassId(initialClassId);
     setFormStreamId(streams[0]?.id || '');
+    setFormBoard('ALL');
     const today = getTodayDateString();
     setFormDate(today);
     setFormEndDate(today);
@@ -257,6 +306,7 @@ export const LiveClassesPage = () => {
     setFormClassId(lc.classId);
     setFormStreamId(lc.streamId || '');
     setFormClassSubjectId(lc.classSubjectId);
+    setFormBoard(lc.board || 'ALL');
     setFormDate(lc.date);
     setFormEndDate(lc.endDate || lc.date);
     setFormStartTime(lc.startTime);
@@ -317,6 +367,7 @@ export const LiveClassesPage = () => {
       subjectId: matchedSubject.subjectId,
       subjectName: matchedSubject.subjectName,
       classSubjectId: matchedSubject.id,
+      board: formBoard || matchedSubject.board || 'ALL',
       date: formDate,
       startTime: formStartTime,
       endDate: formEndDate,
@@ -488,6 +539,28 @@ export const LiveClassesPage = () => {
         </div>
 
         <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-1.5 sm:gap-2 w-full lg:w-auto">
+          {/* Board Filter Pills */}
+          <div className="col-span-2 sm:col-span-1 flex items-center gap-1 bg-slate-100 p-0.5 sm:p-1 rounded-lg">
+            {[
+              { id: 'all', label: 'All Boards' },
+              { id: 'CBSE', label: 'CBSE' },
+              { id: 'BSEB', label: 'BSEB' },
+            ].map((b) => (
+              <button
+                key={b.id}
+                type="button"
+                onClick={() => setSelectedBoardFilter(b.id)}
+                className={`px-2 py-1 text-[11px] sm:text-xs font-semibold rounded-md transition-all cursor-pointer ${
+                  selectedBoardFilter === b.id
+                    ? 'bg-white text-primary-700 shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                {b.label}
+              </button>
+            ))}
+          </div>
+
           {/* Class Filter */}
           <div className="col-span-1 sm:w-36">
             <Select
@@ -591,6 +664,7 @@ export const LiveClassesPage = () => {
                     <span className="text-[9px] font-semibold text-blue-700 bg-blue-50 px-1.5 py-0.2 rounded truncate max-w-[120px]">
                       {lc.subjectName}
                     </span>
+                    {renderBoardBadge(lc.board)}
                   </div>
 
                   {/* Status Badge */}
@@ -740,13 +814,14 @@ export const LiveClassesPage = () => {
 
                     <Table.Cell>
                       <div className="space-y-0.5">
-                        <div className="flex items-center gap-1">
+                        <div className="flex items-center gap-1 flex-wrap">
                           <span className="font-bold text-xs text-slate-800">{lc.className}</span>
                           {lc.streamName && (
                             <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-purple-50 text-purple-700">
                               {lc.streamName}
                             </span>
                           )}
+                          {renderBoardBadge(lc.board)}
                         </div>
                         <span className="text-xs text-slate-500 font-medium">{lc.subjectName}</span>
                       </div>
@@ -901,13 +976,27 @@ export const LiveClassesPage = () => {
                 onChange={(e) => setFormClassSubjectId(e.target.value)}
                 options={availableFormSubjects.map((s) => ({
                   value: s.id,
-                  label: s.subjectName,
+                  label: formatSubjectOptionLabel(s),
                 }))}
                 helperText={availableFormSubjects.length === 0 ? 'No subjects in context.' : undefined}
                 required
               />
             )}
           </div>
+
+          {/* Educational Board Selector */}
+          <Select
+            label="Target Educational Board"
+            value={formBoard}
+            onChange={(e) => setFormBoard(e.target.value)}
+            options={[
+              { value: 'ALL', label: 'Both Boards (Common Session)' },
+              { value: 'CBSE', label: 'CBSE' },
+              { value: 'BSEB', label: 'BSEB (Bihar Board)' },
+            ]}
+            helperText="Specify which board students can attend this live class."
+            required
+          />
 
           {/* Subject when stream-based */}
           {formClassHasStreams && (

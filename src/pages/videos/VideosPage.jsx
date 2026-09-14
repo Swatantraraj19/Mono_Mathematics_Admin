@@ -62,6 +62,7 @@ export const VideosPage = () => {
   const [selectedStreamId, setSelectedStreamId] = useState('');
   const [selectedSubjectId, setSelectedSubjectId] = useState('');
   const [selectedChapterId, setSelectedChapterId] = useState('');
+  const [selectedBoardFilter, setSelectedBoardFilter] = useState('all'); // 'all' | 'CBSE' | 'BSEB'
 
   // Chapter-Scoped Video Data
   const [chapterVideos, setChapterVideos] = useState([]);
@@ -231,18 +232,74 @@ export const VideosPage = () => {
     return classSubjects.filter((cs) => {
       if (cs.classId !== selectedClassId) return false;
       if (activeClassHasStreams && selectedStreamId && cs.streamId !== selectedStreamId) return false;
+      if (selectedBoardFilter !== 'all') {
+        const board = cs.board || 'ALL';
+        if (board !== 'ALL' && board !== selectedBoardFilter) return false;
+      }
       return true;
     });
-  }, [classSubjects, selectedClassId, selectedStreamId, activeClassHasStreams]);
+  }, [classSubjects, selectedClassId, selectedStreamId, activeClassHasStreams, selectedBoardFilter]);
+
+  // Keep selectedSubjectId in sync with availableSubjects
+  useEffect(() => {
+    if (availableSubjects.length > 0) {
+      if (!availableSubjects.some((s) => s.id === selectedSubjectId)) {
+        setSelectedSubjectId(availableSubjects[0].id);
+      }
+    } else {
+      setSelectedSubjectId('');
+    }
+  }, [availableSubjects, selectedSubjectId]);
 
   // Available Chapters under active Subject
   const availableChapters = useMemo(() => {
     return chapters.filter((ch) => ch.classSubjectId === selectedSubjectId);
   }, [chapters, selectedSubjectId]);
 
+  // Keep selectedChapterId in sync with availableChapters
+  useEffect(() => {
+    if (availableChapters.length > 0) {
+      if (!availableChapters.some((ch) => ch.id === selectedChapterId)) {
+        setSelectedChapterId(availableChapters[0].id);
+      }
+    } else {
+      setSelectedChapterId('');
+    }
+  }, [availableChapters, selectedChapterId]);
+
   // Active Subject & Chapter Objects
   const activeSubjectObj = classSubjects.find((s) => s.id === selectedSubjectId);
   const activeChapterObj = chapters.find((ch) => ch.id === selectedChapterId);
+
+  // Helper for board badge styling
+  const renderBoardBadge = (board) => {
+    const b = board || 'ALL';
+    if (b === 'CBSE') {
+      return (
+        <span className="text-[10px] font-bold px-1.5 py-0.2 sm:py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200 shrink-0">
+          CBSE
+        </span>
+      );
+    }
+    if (b === 'BSEB') {
+      return (
+        <span className="text-[10px] font-bold px-1.5 py-0.2 sm:py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-200 shrink-0">
+          BSEB
+        </span>
+      );
+    }
+    return (
+      <span className="text-[10px] font-bold px-1.5 py-0.2 sm:py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 shrink-0">
+        All Boards
+      </span>
+    );
+  };
+
+  const formatSubjectOptionLabel = (s) => {
+    const b = s.board || 'ALL';
+    const bLabel = b === 'CBSE' ? 'CBSE' : b === 'BSEB' ? 'BSEB' : 'All Boards';
+    return `${s.subjectName} (${bLabel})`;
+  };
 
   // 3. Lazy Scoped Video Loading: Triggered only when selectedChapterId changes
   const loadChapterVideos = async (chapterId) => {
@@ -493,6 +550,7 @@ export const VideosPage = () => {
       subjectName: matchedChapter.subjectName,
       chapterId: matchedChapter.id,
       chapterName: matchedChapter.name,
+      board: matchedChapter.board || activeSubjectObj?.board || 'ALL',
       status: formStatus,
     };
 
@@ -593,8 +651,8 @@ export const VideosPage = () => {
       {/* Academic Drill-down & Global Search Filter Panel */}
       <div className="admin-card !p-2.5 sm:!p-4 space-y-2 sm:space-y-3 shadow-xs">
         {/* Top Control Row: Global Search & Reload */}
-        <div className="flex items-center gap-1.5 sm:gap-2">
-          <div className="relative flex-1">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-1.5 sm:gap-2">
+          <div className="relative w-full sm:flex-1">
             <Input
               type="text"
               placeholder="Search all video lectures across institute..."
@@ -617,18 +675,42 @@ export const VideosPage = () => {
             )}
           </div>
 
-          <button
-            type="button"
-            onClick={() => {
-              loadMetadata();
-              if (selectedChapterId) loadChapterVideos(selectedChapterId);
-            }}
-            className="w-8 h-8 sm:w-10 sm:h-10 min-w-[32px] sm:min-w-[40px] flex items-center justify-center rounded-lg border border-slate-200 text-slate-500 hover:text-primary-600 hover:bg-slate-50 active:bg-slate-100 transition-colors shrink-0 cursor-pointer"
-            title="Refresh academic data"
-            aria-label="Refresh academic data"
-          >
-            <RefreshCw className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-          </button>
+          <div className="flex items-center gap-1.5 sm:gap-2 w-full sm:w-auto justify-between sm:justify-end">
+            {/* Board Filter Pills */}
+            <div className="flex items-center gap-1 bg-slate-100 p-0.5 sm:p-1 rounded-lg">
+              {[
+                { id: 'all', label: 'All Boards' },
+                { id: 'CBSE', label: 'CBSE' },
+                { id: 'BSEB', label: 'BSEB' },
+              ].map((b) => (
+                <button
+                  key={b.id}
+                  type="button"
+                  onClick={() => setSelectedBoardFilter(b.id)}
+                  className={`px-2 py-1 text-[11px] sm:text-xs font-semibold rounded-md transition-all cursor-pointer ${
+                    selectedBoardFilter === b.id
+                      ? 'bg-white text-primary-700 shadow-xs'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  {b.label}
+                </button>
+              ))}
+            </div>
+
+            <button
+              type="button"
+              onClick={() => {
+                loadMetadata();
+                if (selectedChapterId) loadChapterVideos(selectedChapterId);
+              }}
+              className="w-8 h-8 sm:w-10 sm:h-10 min-w-[32px] sm:min-w-[40px] flex items-center justify-center rounded-lg border border-slate-200 text-slate-500 hover:text-primary-600 hover:bg-slate-50 active:bg-slate-100 transition-colors shrink-0 cursor-pointer"
+              title="Refresh academic data"
+              aria-label="Refresh academic data"
+            >
+              <RefreshCw className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            </button>
+          </div>
         </div>
 
         {/* Academic Hierarchy Selectors: Class -> Stream -> Subject -> Chapter */}
@@ -673,7 +755,7 @@ export const VideosPage = () => {
               onChange={(e) => handleSubjectChange(e.target.value)}
               options={availableSubjects.map((s) => ({
                 value: s.id,
-                label: s.subjectName,
+                label: formatSubjectOptionLabel(s),
               }))}
               className="text-xs py-1 sm:py-2 bg-slate-50/70"
               aria-label="Select Subject"
@@ -853,6 +935,7 @@ export const VideosPage = () => {
                         <span className="text-[9px] sm:text-[10px] font-medium text-slate-500 truncate max-w-[200px]">
                           • {v.subjectName} • {v.chapterName}
                         </span>
+                        {renderBoardBadge(v.board)}
                       </div>
                       <h4 className="text-xs sm:text-sm font-bold text-slate-900 truncate leading-snug">
                         L#{v.orderIndex} - {v.title}
@@ -991,9 +1074,12 @@ export const VideosPage = () => {
 
                     {/* Middle: Title & Meta */}
                     <div className="min-w-0 flex-1">
-                      <h4 className="text-xs font-bold text-slate-900 leading-tight truncate" title={v.title}>
-                        {v.title}
-                      </h4>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <h4 className="text-xs font-bold text-slate-900 leading-tight truncate" title={v.title}>
+                          {v.title}
+                        </h4>
+                        {renderBoardBadge(v.board || activeChapterObj?.board || activeSubjectObj?.board)}
+                      </div>
                       <div className="flex items-center gap-1.5 text-[10px] text-slate-500 mt-0.5">
                         <span className="font-mono font-bold text-primary-700 bg-indigo-50 px-1 py-0.2 rounded">
                           #{v.orderIndex}
@@ -1064,6 +1150,7 @@ export const VideosPage = () => {
                       <Table.Head className="w-16">L #</Table.Head>
                       <Table.Head className="w-24">Preview</Table.Head>
                       <Table.Head>Lecture Title</Table.Head>
+                      <Table.Head className="w-24">Board</Table.Head>
                       <Table.Head className="w-28">Duration</Table.Head>
                       <Table.Head className="w-28">Status</Table.Head>
                       <Table.Head className="text-right w-28 pr-6">Actions</Table.Head>
@@ -1101,6 +1188,10 @@ export const VideosPage = () => {
                             <span className="text-sm font-bold text-slate-900 block">{v.title}</span>
                             <span className="text-[11px] text-slate-400 font-mono">{v.youtubeVideoId}</span>
                           </div>
+                        </Table.Cell>
+
+                        <Table.Cell>
+                          {renderBoardBadge(v.board || activeChapterObj?.board || activeSubjectObj?.board)}
                         </Table.Cell>
 
                         <Table.Cell>
@@ -1228,7 +1319,7 @@ export const VideosPage = () => {
               onChange={(e) => setFormSubjectId(e.target.value)}
               options={availableFormSubjects.map((s) => ({
                 value: s.id,
-                label: s.subjectName,
+                label: formatSubjectOptionLabel(s),
               }))}
               helperText={availableFormSubjects.length === 0 ? 'No subjects in context.' : undefined}
               required

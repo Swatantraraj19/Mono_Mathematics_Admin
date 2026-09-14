@@ -25,10 +25,14 @@ export const fetchChaptersBySubject = async (instituteId = 'mono_math_01', class
       where('classSubjectId', '==', classSubjectId)
     );
     const snapshot = await getDocs(q);
-    const list = snapshot.docs.map((docSnap) => ({
-      id: docSnap.id,
-      ...docSnap.data(),
-    }));
+    const list = snapshot.docs.map((docSnap) => {
+      const d = docSnap.data();
+      return {
+        id: docSnap.id,
+        ...d,
+        board: d.board || 'ALL',
+      };
+    });
 
     return list.sort(
       (a, b) =>
@@ -53,10 +57,14 @@ export const fetchChapters = async (instituteId = 'mono_math_01', classSubjectId
       where('instituteId', '==', instituteId)
     );
     const snapshot = await getDocs(q);
-    const list = snapshot.docs.map((docSnap) => ({
-      id: docSnap.id,
-      ...docSnap.data(),
-    }));
+    const list = snapshot.docs.map((docSnap) => {
+      const d = docSnap.data();
+      return {
+        id: docSnap.id,
+        ...d,
+        board: d.board || 'ALL',
+      };
+    });
 
     return list.sort(
       (a, b) =>
@@ -81,10 +89,14 @@ export const searchGlobalChapters = async (instituteId = 'mono_math_01', searchT
       where('instituteId', '==', instituteId)
     );
     const snapshot = await getDocs(q);
-    const all = snapshot.docs.map((docSnap) => ({
-      id: docSnap.id,
-      ...docSnap.data(),
-    }));
+    const all = snapshot.docs.map((docSnap) => {
+      const d = docSnap.data();
+      return {
+        id: docSnap.id,
+        ...d,
+        board: d.board || 'ALL',
+      };
+    });
 
     return all.filter((ch) => (ch.name || '').toLowerCase().includes(trimmed));
   } catch (error) {
@@ -135,6 +147,7 @@ export const createChapter = async (chapterData, instituteId = 'mono_math_01') =
       subjectId: chapterData.subjectId,
       subjectName: chapterData.subjectName,
       classSubjectId: chapterData.classSubjectId,
+      board: chapterData.board || 'ALL',
       status: chapterData.status || 'active',
       instituteId,
       createdAt: serverTimestamp(),

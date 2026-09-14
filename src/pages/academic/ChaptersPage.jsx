@@ -46,6 +46,7 @@ export const ChaptersPage = () => {
   const [selectedClassId, setSelectedClassId] = useState('');
   const [selectedStreamId, setSelectedStreamId] = useState('');
   const [selectedSubjectId, setSelectedSubjectId] = useState('');
+  const [selectedBoardFilter, setSelectedBoardFilter] = useState('all'); // 'all' | 'CBSE' | 'BSEB'
 
   // Subject-Scoped Chapters Data
   const [subjectChapters, setSubjectChapters] = useState([]);
@@ -124,11 +125,56 @@ export const ChaptersPage = () => {
     return classSubjects.filter((cs) => {
       if (cs.classId !== selectedClassId) return false;
       if (activeClassHasStreams && selectedStreamId && cs.streamId !== selectedStreamId) return false;
+      if (selectedBoardFilter !== 'all') {
+        const board = cs.board || 'ALL';
+        if (board !== 'ALL' && board !== selectedBoardFilter) return false;
+      }
       return true;
     });
-  }, [classSubjects, selectedClassId, selectedStreamId, activeClassHasStreams]);
+  }, [classSubjects, selectedClassId, selectedStreamId, activeClassHasStreams, selectedBoardFilter]);
+
+  // Keep selectedSubjectId in sync with availableSubjects
+  useEffect(() => {
+    if (availableSubjects.length > 0) {
+      if (!availableSubjects.some((s) => s.id === selectedSubjectId)) {
+        setSelectedSubjectId(availableSubjects[0].id);
+      }
+    } else {
+      setSelectedSubjectId('');
+    }
+  }, [availableSubjects, selectedSubjectId]);
 
   const activeSubjectObj = classSubjects.find((s) => s.id === selectedSubjectId);
+
+  // Helper for board badge styling
+  const renderBoardBadge = (board) => {
+    const b = board || 'ALL';
+    if (b === 'CBSE') {
+      return (
+        <span className="text-[10px] font-bold px-1.5 py-0.2 sm:py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200">
+          CBSE
+        </span>
+      );
+    }
+    if (b === 'BSEB') {
+      return (
+        <span className="text-[10px] font-bold px-1.5 py-0.2 sm:py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-200">
+          BSEB
+        </span>
+      );
+    }
+    return (
+      <span className="text-[10px] font-bold px-1.5 py-0.2 sm:py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
+        All Boards
+      </span>
+    );
+  };
+
+  const formatSubjectOptionLabel = (s) => {
+    const b = s.board || 'ALL';
+    const bLabel = b === 'CBSE' ? 'CBSE' : b === 'BSEB' ? 'BSEB' : 'All Boards';
+    return `${s.subjectName} (${bLabel})`;
+  };
 
   // 3. Scoped Chapter Loading: Triggered only when selectedSubjectId changes
   const loadSubjectChapters = async (classSubjectId) => {
@@ -292,6 +338,7 @@ export const ChaptersPage = () => {
       subjectId: matchedSubject.subjectId,
       subjectName: matchedSubject.subjectName,
       classSubjectId: matchedSubject.id,
+      board: matchedSubject.board || 'ALL',
       status: formStatus,
     };
 
@@ -398,10 +445,29 @@ export const ChaptersPage = () => {
             />
           </div>
 
-          <div className="flex items-center gap-1.5 sm:gap-2 w-full md:w-auto justify-end">
-            <span className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-slate-400">
-              Academic Context:
-            </span>
+          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 w-full md:w-auto justify-between md:justify-end">
+            {/* Board Filter Pills */}
+            <div className="flex items-center gap-1 bg-slate-100 p-0.5 sm:p-1 rounded-lg">
+              {[
+                { id: 'all', label: 'All Boards' },
+                { id: 'CBSE', label: 'CBSE' },
+                { id: 'BSEB', label: 'BSEB' },
+              ].map((b) => (
+                <button
+                  key={b.id}
+                  type="button"
+                  onClick={() => setSelectedBoardFilter(b.id)}
+                  className={`px-2 py-1 text-[11px] sm:text-xs font-semibold rounded-md transition-all cursor-pointer ${
+                    selectedBoardFilter === b.id
+                      ? 'bg-white text-primary-700 shadow-xs'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  {b.label}
+                </button>
+              ))}
+            </div>
+
             <button
               type="button"
               onClick={() => {
@@ -456,7 +522,7 @@ export const ChaptersPage = () => {
               onChange={(e) => handleSubjectChange(e.target.value)}
               options={availableSubjects.map((s) => ({
                 value: s.id,
-                label: s.subjectName,
+                label: formatSubjectOptionLabel(s),
               }))}
               className="text-xs py-1 sm:py-1.5 bg-blue-50/30 text-blue-900 border-blue-200 font-medium"
             />
@@ -512,6 +578,7 @@ export const ChaptersPage = () => {
                         <span className="text-[9px] sm:text-[10px] font-medium text-slate-500 truncate max-w-[150px]">
                           • {ch.subjectName}
                         </span>
+                        {renderBoardBadge(ch.board)}
                       </div>
                       <h4 className="text-xs sm:text-sm font-bold text-slate-900 truncate">
                         {ch.name}
@@ -580,9 +647,10 @@ export const ChaptersPage = () => {
 
               <ChevronRight className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-slate-300" />
 
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-md text-[11px] sm:text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200">
+              <span className="inline-flex items-center gap-1.5 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-md text-[11px] sm:text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200">
                 <BookOpen className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                 {activeSubjectObj?.subjectName || 'Subject'}
+                {renderBoardBadge(activeSubjectObj?.board)}
               </span>
             </div>
 
@@ -621,9 +689,14 @@ export const ChaptersPage = () => {
                       <span className="font-mono text-[11px] font-bold px-1.5 py-0.2 bg-amber-50 text-amber-800 border border-amber-200 rounded-md shrink-0">
                         #{ch.chapterNumber}
                       </span>
-                      <h4 className="text-xs font-bold text-slate-900 truncate" title={ch.name}>
-                        {ch.name}
-                      </h4>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <h4 className="text-xs font-bold text-slate-900 truncate" title={ch.name}>
+                            {ch.name}
+                          </h4>
+                          {renderBoardBadge(ch.board || activeSubjectObj?.board)}
+                        </div>
+                      </div>
                     </div>
 
                     <div className="flex items-center gap-1.5 shrink-0">
@@ -671,6 +744,7 @@ export const ChaptersPage = () => {
                     <Table.Row>
                       <Table.Head className="w-20">Chapter #</Table.Head>
                       <Table.Head>Chapter Title</Table.Head>
+                      <Table.Head className="w-28">Board</Table.Head>
                       <Table.Head className="w-32">Status</Table.Head>
                       <Table.Head className="text-right w-28 pr-6">Actions</Table.Head>
                     </Table.Row>
@@ -686,6 +760,10 @@ export const ChaptersPage = () => {
 
                         <Table.Cell>
                           <span className="text-sm font-bold text-slate-900 block">{ch.name}</span>
+                        </Table.Cell>
+
+                        <Table.Cell>
+                          {renderBoardBadge(ch.board || activeSubjectObj?.board)}
                         </Table.Cell>
 
                         <Table.Cell>
@@ -771,7 +849,7 @@ export const ChaptersPage = () => {
             onChange={(e) => setFormClassSubjectId(e.target.value)}
             options={availableFormSubjects.map((s) => ({
               value: s.id,
-              label: s.subjectName,
+              label: formatSubjectOptionLabel(s),
             }))}
             helperText={availableFormSubjects.length === 0 ? 'No subjects mapped to this context.' : undefined}
             required

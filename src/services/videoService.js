@@ -55,10 +55,14 @@ export const fetchVideosByChapter = async (instituteId, chapterId) => {
       where('chapterId', '==', chapterId)
     );
     const snapshot = await getDocs(q);
-    const list = snapshot.docs.map((docSnap) => ({
-      id: docSnap.id,
-      ...docSnap.data(),
-    }));
+    const list = snapshot.docs.map((docSnap) => {
+      const d = docSnap.data();
+      return {
+        id: docSnap.id,
+        ...d,
+        board: d.board || 'ALL',
+      };
+    });
 
     return list.sort((a, b) => (Number(a.orderIndex) || 0) - (Number(b.orderIndex) || 0));
   } catch (error) {
@@ -98,10 +102,14 @@ export const searchGlobalVideos = async (instituteId, searchText = '', maxResult
       return [];
     }
 
-    return snapshot.docs.map((docSnap) => ({
-      id: docSnap.id,
-      ...docSnap.data(),
-    }));
+    return snapshot.docs.map((docSnap) => {
+      const d = docSnap.data();
+      return {
+        id: docSnap.id,
+        ...d,
+        board: d.board || 'ALL',
+      };
+    });
   } catch (error) {
     console.error('Firestore global search error:', error);
     throw error;
@@ -179,6 +187,7 @@ export const createVideo = async (videoData, instituteId) => {
       subjectName: videoData.subjectName || null,
       chapterId: videoData.chapterId,
       chapterName: videoData.chapterName || null,
+      board: videoData.board || 'ALL',
 
       status: videoData.status || 'active',
       instituteId,
@@ -248,6 +257,7 @@ export const updateVideo = async (videoId, updateData) => {
     if (updateData.subjectName !== undefined) sanitizedData.subjectName = updateData.subjectName;
     if (updateData.chapterId !== undefined) sanitizedData.chapterId = updateData.chapterId;
     if (updateData.chapterName !== undefined) sanitizedData.chapterName = updateData.chapterName;
+    if (updateData.board !== undefined) sanitizedData.board = updateData.board;
 
     // Strict tenant/security safeguards: explicitly strip any attempt to overwrite ownership or creation timestamp
     delete sanitizedData.instituteId;

@@ -34,6 +34,7 @@ export const StudentsPage = () => {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('pending'); // 'pending' by default for instant admin approvals
+  const [boardFilter, setBoardFilter] = useState('all'); // 'all' | 'CBSE' | 'BSEB'
   const [currentPage, setCurrentPage] = useState(1);
 
   // Modal / Action states
@@ -60,7 +61,7 @@ export const StudentsPage = () => {
   // Reset page number on filter/search change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, statusFilter]);
+  }, [searchQuery, statusFilter, boardFilter]);
 
   const handleStatusChange = async (studentId, newStatus) => {
     try {
@@ -107,10 +108,44 @@ export const StudentsPage = () => {
       const phoneMatch = s.phone?.toLowerCase().includes(q);
       const matchesSearch = !q || nameMatch || emailMatch || phoneMatch;
 
-      if (statusFilter === 'all') return matchesSearch;
-      return matchesSearch && s.status === statusFilter;
+      if (!matchesSearch) return false;
+
+      if (statusFilter !== 'all' && s.status !== statusFilter) {
+        return false;
+      }
+
+      if (boardFilter !== 'all') {
+        const studentBoard = s.board || '';
+        if (studentBoard !== boardFilter) return false;
+      }
+
+      return true;
     });
-  }, [students, searchQuery, statusFilter]);
+  }, [students, searchQuery, statusFilter, boardFilter]);
+
+  // Helper for board badge styling
+  const renderBoardBadge = (board) => {
+    if (!board) return null;
+    if (board === 'CBSE') {
+      return (
+        <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-blue-50 text-blue-700 border border-blue-200 shrink-0">
+          CBSE
+        </span>
+      );
+    }
+    if (board === 'BSEB') {
+      return (
+        <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-amber-50 text-amber-700 border border-amber-200 shrink-0">
+          BSEB
+        </span>
+      );
+    }
+    return (
+      <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-slate-100 text-slate-700 border border-slate-200 shrink-0">
+        {board}
+      </span>
+    );
+  };
 
   // Pagination logic
   const totalPages = Math.ceil(filteredStudents.length / ITEMS_PER_PAGE) || 1;
@@ -159,12 +194,15 @@ export const StudentsPage = () => {
             <Phone className="w-3 h-3 text-slate-400 shrink-0" />
             {student.phone || 'N/A'}
           </span>
-          {student.className && (
-            <span className="flex items-center gap-1 text-[11px] text-slate-500">
-              <GraduationCap className="w-3 h-3 text-slate-400 shrink-0" />
-              Class: {student.className}
-            </span>
-          )}
+          <div className="flex items-center gap-1.5 flex-wrap">
+            {student.className && (
+              <span className="flex items-center gap-1 text-[11px] text-slate-500">
+                <GraduationCap className="w-3 h-3 text-slate-400 shrink-0" />
+                Class: {student.className}
+              </span>
+            )}
+            {renderBoardBadge(student.board)}
+          </div>
         </div>
       ),
     },
@@ -352,8 +390,8 @@ export const StudentsPage = () => {
       </div>
 
       {/* Filter and Search Controls (High-density compact layout) */}
-      <div className="admin-card !p-1.5 sm:!p-3 flex flex-col sm:flex-row items-center justify-between gap-1.5 sm:gap-2.5">
-        <div className="w-full sm:w-72">
+      <div className="admin-card !p-1.5 sm:!p-3 flex flex-col md:flex-row items-center justify-between gap-1.5 sm:gap-2.5">
+        <div className="w-full md:w-72">
           <Input
             placeholder="Search name, email, phone..."
             value={searchQuery}
@@ -363,27 +401,51 @@ export const StudentsPage = () => {
           />
         </div>
 
-        {/* Horizontal Mobile Scrollable Status Tabs */}
-        <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-lg w-full sm:w-auto overflow-x-auto select-none">
-          {[
-            { key: 'pending', label: `Pending (${stats.pending})` },
-            { key: 'active', label: `Active (${stats.active})` },
-            { key: 'all', label: `All (${stats.total})` },
-            { key: 'inactive', label: `Inactive (${stats.inactive})` },
-          ].map((tab) => (
-            <button
-              key={tab.key}
-              type="button"
-              onClick={() => setStatusFilter(tab.key)}
-              className={`px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-md text-[11px] sm:text-xs font-semibold transition-all cursor-pointer shrink-0 ${
-                statusFilter === tab.key
-                  ? 'bg-white text-slate-900 shadow-2xs'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
+        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 w-full md:w-auto justify-between md:justify-end">
+          {/* Board Filter Pills */}
+          <div className="flex items-center gap-1 bg-slate-100 p-0.5 sm:p-1 rounded-lg select-none">
+            {[
+              { key: 'all', label: 'All Boards' },
+              { key: 'CBSE', label: 'CBSE' },
+              { key: 'BSEB', label: 'BSEB' },
+            ].map((b) => (
+              <button
+                key={b.key}
+                type="button"
+                onClick={() => setBoardFilter(b.key)}
+                className={`px-2 py-1 text-[11px] sm:text-xs font-semibold rounded-md transition-all cursor-pointer ${
+                  boardFilter === b.key
+                    ? 'bg-white text-primary-700 shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                {b.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Horizontal Mobile Scrollable Status Tabs */}
+          <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-lg overflow-x-auto select-none">
+            {[
+              { key: 'pending', label: `Pending (${stats.pending})` },
+              { key: 'active', label: `Active (${stats.active})` },
+              { key: 'all', label: `All (${stats.total})` },
+              { key: 'inactive', label: `Inactive (${stats.inactive})` },
+            ].map((tab) => (
+              <button
+                key={tab.key}
+                type="button"
+                onClick={() => setStatusFilter(tab.key)}
+                className={`px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-md text-[11px] sm:text-xs font-semibold transition-all cursor-pointer shrink-0 ${
+                  statusFilter === tab.key
+                    ? 'bg-white text-slate-900 shadow-2xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -494,9 +556,9 @@ export const StudentsPage = () => {
                       </div>
                     </div>
 
-                    {/* Sub-details (Class & Phone) */}
-                    {(student.phone || student.className) && (
-                      <div className="flex items-center gap-3 text-[10px] text-slate-500 pl-9">
+                    {/* Sub-details (Class, Board & Phone) */}
+                    {(student.phone || student.className || student.board) && (
+                      <div className="flex items-center gap-2.5 text-[10px] text-slate-500 pl-9 flex-wrap">
                         {student.phone && (
                           <span className="flex items-center gap-1">
                             <Phone className="w-2.5 h-2.5 text-slate-400" />
@@ -509,6 +571,7 @@ export const StudentsPage = () => {
                             Class: {student.className}
                           </span>
                         )}
+                        {renderBoardBadge(student.board)}
                       </div>
                     )}
                   </div>

@@ -22,6 +22,20 @@ export const STANDARD_STREAMS = [
   'Arts',
 ];
 
+export const STANDARD_STREAM_ORDER = {
+  science: 1,
+  commerce: 2,
+  arts: 3,
+};
+
+export const getStreamOrder = (stream) => {
+  const nameKey = (stream?.name || '').trim().toLowerCase();
+  if (STANDARD_STREAM_ORDER[nameKey] !== undefined) {
+    return STANDARD_STREAM_ORDER[nameKey];
+  }
+  return Number(stream?.orderIndex) || 0;
+};
+
 /**
  * Fetch all streams for an institute.
  */
@@ -32,12 +46,26 @@ export const fetchStreams = async (instituteId = 'mono_math_01') => {
       where('instituteId', '==', instituteId)
     );
     const snapshot = await getDocs(q);
-    const list = snapshot.docs.map((docSnap) => ({
-      id: docSnap.id,
-      ...docSnap.data(),
-    }));
+    const list = snapshot.docs.map((docSnap) => {
+      const data = docSnap.data();
+      const correctOrder = getStreamOrder(data);
 
-    return list.sort((a, b) => (Number(a.orderIndex) || 0) - (Number(b.orderIndex) || 0));
+      // Auto-correct in background if orderIndex in Firestore is mismatched
+      if (data.orderIndex !== correctOrder) {
+        updateDoc(docSnap.ref, {
+          orderIndex: correctOrder,
+          updatedAt: serverTimestamp(),
+        }).catch(() => {});
+      }
+
+      return {
+        id: docSnap.id,
+        ...data,
+        orderIndex: correctOrder,
+      };
+    });
+
+    return list.sort((a, b) => getStreamOrder(a) - getStreamOrder(b));
   } catch (error) {
     throw error;
   }

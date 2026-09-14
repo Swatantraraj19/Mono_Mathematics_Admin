@@ -23,6 +23,7 @@ import {
   unmapSubjectFromClass,
   toggleClassSubjectStatus,
   STANDARD_SUBJECTS,
+  STANDARD_BOARDS,
 } from '../../services/subjectService';
 import { fetchClasses } from '../../services/classService';
 import { fetchStreams } from '../../services/streamService';
@@ -44,6 +45,7 @@ export const SubjectsPage = () => {
   // Filters & Search
   const [selectedClassFilter, setSelectedClassFilter] = useState('all');
   const [selectedStreamFilter, setSelectedStreamFilter] = useState('all');
+  const [selectedBoardFilter, setSelectedBoardFilter] = useState('all'); // 'all' | 'CBSE' | 'BSEB'
   const [searchTerm, setSearchTerm] = useState('');
 
   // Accordion Expand/Collapse State (keyed by classId or classId_streamId)
@@ -58,6 +60,7 @@ export const SubjectsPage = () => {
   // Form states
   const [formClassId, setFormClassId] = useState('');
   const [formStreamId, setFormStreamId] = useState('');
+  const [formBoard, setFormBoard] = useState('ALL'); // 'ALL' | 'CBSE' | 'BSEB'
   const [formSubjectName, setFormSubjectName] = useState('Mathematics');
   const [formCustomSubject, setFormCustomSubject] = useState('');
   const [formStatus, setFormStatus] = useState('active');
@@ -146,7 +149,15 @@ export const SubjectsPage = () => {
 
     targetClasses.forEach((cls) => {
       const isSenior = cls.hasStreams || cls.name.includes('11') || cls.name.includes('12');
-      const allClassSubjects = classSubjects.filter((s) => s.classId === cls.id);
+      let allClassSubjects = classSubjects.filter((s) => s.classId === cls.id);
+
+      // Filter by Board if selected
+      if (selectedBoardFilter !== 'all') {
+        allClassSubjects = allClassSubjects.filter((s) => {
+          const sBoard = (s.board || 'ALL').toUpperCase();
+          return sBoard === selectedBoardFilter || sBoard === 'ALL';
+        });
+      }
 
       if (!isSenior) {
         // Classes 6-10: Direct Subjects
@@ -249,7 +260,7 @@ export const SubjectsPage = () => {
     });
 
     return result;
-  }, [classes, streams, classSubjects, selectedClassFilter, selectedStreamFilter, searchTerm, filterClassHasStreams]);
+  }, [classes, streams, classSubjects, selectedClassFilter, selectedStreamFilter, selectedBoardFilter, searchTerm, filterClassHasStreams]);
 
   // When search is active, automatically expand matching accordions
   useEffect(() => {
@@ -281,6 +292,7 @@ export const SubjectsPage = () => {
     const initialClassId = classes[0]?.id || '';
     setFormClassId(initialClassId);
     setFormStreamId(streams[0]?.id || '');
+    setFormBoard(selectedBoardFilter !== 'all' ? selectedBoardFilter : 'ALL');
     setFormSubjectName(STANDARD_SUBJECTS[0]);
     setFormCustomSubject('');
     setFormStatus('active');
@@ -292,6 +304,7 @@ export const SubjectsPage = () => {
     setEditingMapping(item);
     setFormClassId(item.classId);
     setFormStreamId(item.streamId || '');
+    setFormBoard(item.board || 'ALL');
     if (STANDARD_SUBJECTS.includes(item.subjectName)) {
       setFormSubjectName(item.subjectName);
       setFormCustomSubject('');
@@ -333,12 +346,14 @@ export const SubjectsPage = () => {
       (m) =>
         m.classId === cls.id &&
         (isSeniorClass ? m.streamId === (stm ? stm.id : null) : true) &&
+        (m.board || 'ALL') === formBoard &&
         (m.subjectName || '').toLowerCase() === finalSubjectName.toLowerCase() &&
         (!editingMapping || m.id !== editingMapping.id)
     );
 
     if (isDuplicate) {
-      const context = stm ? `${cls.name} (${stm.name})` : cls.name;
+      const boardLabel = formBoard === 'ALL' ? 'Both Boards' : formBoard;
+      const context = stm ? `${cls.name} (${stm.name}) [${boardLabel}]` : `${cls.name} [${boardLabel}]`;
       toast.error(`"${finalSubjectName}" is already mapped to ${context}. Duplicate subjects are not allowed.`);
       return;
     }
@@ -349,6 +364,7 @@ export const SubjectsPage = () => {
       streamId: stm ? stm.id : null,
       streamName: stm ? stm.name : null,
       subjectName: finalSubjectName,
+      board: formBoard,
       status: formStatus,
     };
 
@@ -454,6 +470,28 @@ export const SubjectsPage = () => {
         </div>
 
         <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 w-full md:w-auto">
+          {/* Board Filter Pills */}
+          <div className="flex items-center gap-1 bg-slate-100 p-0.5 sm:p-1 rounded-lg">
+            {[
+              { id: 'all', label: 'All Boards' },
+              { id: 'CBSE', label: 'CBSE' },
+              { id: 'BSEB', label: 'BSEB' },
+            ].map((b) => (
+              <button
+                key={b.id}
+                type="button"
+                onClick={() => setSelectedBoardFilter(b.id)}
+                className={`px-2 py-1 text-[11px] sm:text-xs font-semibold rounded-md transition-all cursor-pointer ${
+                  selectedBoardFilter === b.id
+                    ? 'bg-white text-primary-700 shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                {b.label}
+              </button>
+            ))}
+          </div>
+
           {/* Class Filter */}
           <div className="flex-1 sm:w-44">
             <Select
@@ -611,9 +649,22 @@ export const SubjectsPage = () => {
                                     {sub.subjectName?.charAt(0) || 'S'}
                                   </div>
                                   <div className="min-w-0">
-                                    <span className="text-xs sm:text-sm font-semibold text-slate-900 block truncate">
-                                      {sub.subjectName}
-                                    </span>
+                                    <div className="flex items-center gap-1.5 flex-wrap">
+                                      <span className="text-xs sm:text-sm font-semibold text-slate-900 block truncate">
+                                        {sub.subjectName}
+                                      </span>
+                                      <span
+                                        className={`text-[10px] font-bold px-1.5 py-0.2 sm:py-0.5 rounded ${
+                                          sub.board === 'CBSE'
+                                            ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                                            : sub.board === 'BSEB'
+                                            ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                                            : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                        }`}
+                                      >
+                                        {sub.board === 'CBSE' ? 'CBSE' : sub.board === 'BSEB' ? 'BSEB' : 'All Boards'}
+                                      </span>
+                                    </div>
                                   </div>
                                 </div>
 
@@ -724,9 +775,24 @@ export const SubjectsPage = () => {
                                           <div className="w-6 h-6 rounded-md bg-purple-50 border border-purple-100 flex items-center justify-center text-purple-700 font-bold text-[11px] shrink-0">
                                             {sub.subjectName?.charAt(0) || 'S'}
                                           </div>
-                                          <span className="text-xs sm:text-sm font-semibold text-slate-900 truncate">
-                                            {sub.subjectName}
-                                          </span>
+                                          <div className="min-w-0">
+                                            <div className="flex items-center gap-1.5 flex-wrap">
+                                              <span className="text-xs sm:text-sm font-semibold text-slate-900 truncate">
+                                                {sub.subjectName}
+                                              </span>
+                                              <span
+                                                className={`text-[10px] font-bold px-1.5 py-0.2 sm:py-0.5 rounded ${
+                                                  sub.board === 'CBSE'
+                                                    ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                                                    : sub.board === 'BSEB'
+                                                    ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                                                    : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                                }`}
+                                              >
+                                                {sub.board === 'CBSE' ? 'CBSE' : sub.board === 'BSEB' ? 'BSEB' : 'All Boards'}
+                                              </span>
+                                            </div>
+                                          </div>
                                         </div>
 
                                         <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
@@ -817,6 +883,16 @@ export const SubjectsPage = () => {
               required
             />
           )}
+
+          {/* Educational Board Selector */}
+          <Select
+            label="Educational Board"
+            value={formBoard}
+            onChange={(e) => setFormBoard(e.target.value)}
+            options={STANDARD_BOARDS.map((b) => ({ value: b.id, label: b.name }))}
+            helperText="Select CBSE, BSEB (Bihar Board), or Both Boards (Common)."
+            required
+          />
 
           {/* Subject Name Selector */}
           <Select

@@ -36,6 +36,15 @@ export const STANDARD_SUBJECTS = [
 ];
 
 /**
+ * Standard PRD boards list for filtering & dropdown selection.
+ */
+export const STANDARD_BOARDS = [
+  { id: 'CBSE', name: 'CBSE' },
+  { id: 'BSEB', name: 'BSEB (Bihar Board)' },
+  { id: 'ALL', name: 'Both Boards (Common)' },
+];
+
+/**
  * Fetch all master subjects.
  */
 export const fetchMasterSubjects = async (instituteId = 'mono_math_01') => {
@@ -56,9 +65,14 @@ export const fetchMasterSubjects = async (instituteId = 'mono_math_01') => {
 };
 
 /**
- * Fetch all mapped class-subjects, optionally filtered by classId and streamId.
+ * Fetch all mapped class-subjects, optionally filtered by classId, streamId, and board.
  */
-export const fetchClassSubjects = async (instituteId = 'mono_math_01', classId = null, streamId = null) => {
+export const fetchClassSubjects = async (
+  instituteId = 'mono_math_01',
+  classId = null,
+  streamId = null,
+  board = null
+) => {
   try {
     const q = query(
       collection(db, CLASS_SUBJECTS_COLLECTION),
@@ -66,10 +80,14 @@ export const fetchClassSubjects = async (instituteId = 'mono_math_01', classId =
     );
 
     const snapshot = await getDocs(q);
-    let list = snapshot.docs.map((docSnap) => ({
-      id: docSnap.id,
-      ...docSnap.data(),
-    }));
+    let list = snapshot.docs.map((docSnap) => {
+      const data = docSnap.data();
+      return {
+        id: docSnap.id,
+        board: data.board || 'ALL',
+        ...data,
+      };
+    });
 
     if (classId && classId !== 'all') {
       list = list.filter((item) => item.classId === classId);
@@ -79,6 +97,10 @@ export const fetchClassSubjects = async (instituteId = 'mono_math_01', classId =
       list = list.filter((item) => item.streamId === streamId);
     }
 
+    if (board && board !== 'all') {
+      list = list.filter((item) => (item.board || 'ALL') === board || item.board === 'ALL');
+    }
+
     return list;
   } catch (error) {
     throw error;
@@ -86,7 +108,7 @@ export const fetchClassSubjects = async (instituteId = 'mono_math_01', classId =
 };
 
 /**
- * Map a Subject to a Class (Direct for Classes 6-10, with Stream for Classes 11-12).
+ * Map a Subject to a Class (Direct for Classes 6-10, with Stream for Classes 11-12) with Board.
  */
 export const mapSubjectToClass = async ({
   classId,
@@ -94,10 +116,12 @@ export const mapSubjectToClass = async ({
   streamId = null,
   streamName = null,
   subjectName,
+  board = 'ALL',
   status = 'active',
 }, instituteId = 'mono_math_01') => {
   try {
     const trimmedSubName = subjectName.trim();
+    const sanitizedBoard = (board || 'ALL').toUpperCase();
 
     // 1. Ensure master subject exists
     const masterSubjects = await fetchMasterSubjects(instituteId);
@@ -117,18 +141,21 @@ export const mapSubjectToClass = async ({
       matchedMaster = { id: masterDocRef.id, ...newMasterData };
     }
 
-    // 2. Prevent duplicate mapping in same class context
+    // 2. Prevent duplicate mapping in same class context and board
     const existingMappings = await fetchClassSubjects(instituteId, classId, streamId);
     const isAlreadyMapped = existingMappings.some(
-      (m) => (m.subjectName || '').toLowerCase() === trimmedSubName.toLowerCase()
+      (m) =>
+        (m.subjectName || '').toLowerCase() === trimmedSubName.toLowerCase() &&
+        (m.board || 'ALL') === sanitizedBoard
     );
 
     if (isAlreadyMapped) {
-      const contextLabel = streamName ? `${className} (${streamName})` : className;
+      const boardLabel = sanitizedBoard === 'ALL' ? 'Both Boards' : sanitizedBoard;
+      const contextLabel = streamName ? `${className} (${streamName}) [${boardLabel}]` : `${className} [${boardLabel}]`;
       throw new Error(`Subject "${trimmedSubName}" is already mapped to ${contextLabel}.`);
     }
 
-    // 3. Create mapping document
+    // 3. Create mapping document with board
     const mappingData = {
       classId,
       className,
@@ -136,6 +163,7 @@ export const mapSubjectToClass = async ({
       streamName: streamName || null,
       subjectId: matchedMaster.id,
       subjectName: matchedMaster.name,
+      board: sanitizedBoard,
       status: status || 'active',
       instituteId,
       createdAt: serverTimestamp(),
